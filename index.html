@@ -60,7 +60,7 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 #start .cat{width:min(78vw,380px);margin-bottom:5vh;filter:drop-shadow(0 14px 22px rgba(155,93,229,.3));animation:bob 3.2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 #startBtn{font-size:24px;padding:18px 64px;border-radius:22px}
-/* окна: победа с картиной, галерея, просмотр картины */
+/* окна: победа с блюдом, альбом, просмотр блюда */
 .ovl{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(255,230,245,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:5}
 .ovl[hidden]{display:none}
 .card{width:min(440px,94vw);max-height:92vh;overflow:auto;border-radius:24px;background:rgba(255,255,255,.82);border:2px solid #fff;box-shadow:0 20px 60px rgba(155,93,229,.3);
@@ -94,7 +94,7 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
     <div class="btns">
       <button class="ib" id="undo" aria-label="Отменить ход">↶</button>
       <button class="ib" id="restart" aria-label="Заново">⟳</button>
-      <button class="ib" id="gal" aria-label="Галерея">🖼</button>
+      <button class="ib" id="gal" aria-label="Альбом">🍰</button>
       <button class="ib" id="snd" aria-label="Звук">♪</button>
     </div>
   </header>
@@ -120,10 +120,10 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
   <h2 id="winT"></h2>
   <div class="pic" id="winPic"><img alt=""><canvas></canvas></div>
   <p id="winInfo"></p>
-  <div class="row"><button class="go ghost" id="winGal">Галерея</button><button class="go" id="next">Дальше</button></div>
+  <div class="row"><button class="go ghost" id="winGal">Альбом</button><button class="go" id="next">Дальше</button></div>
 </div></div>
 <div class="ovl" id="gallery" hidden><div class="card">
-  <h2>Галерея Ани</h2>
+  <h2>Кулинарная книга Ани</h2>
   <small id="galSub"></small>
   <div id="grid"></div>
   <button class="go" id="galBack">Играть</button>
