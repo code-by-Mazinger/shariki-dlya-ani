@@ -207,6 +207,26 @@ $('nameGo').onclick = () => { const n = $('catName').value.trim().slice(0, 16) |
   catJump(); hearts(); purr(); say(`${n}: привет! 💕`, 2500); };
 $('catTag').addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); askName(); });
 showName();
+// ─── мышка: иногда (≈ на каждом третьем уровне) пробегает по полу; котик охотится, мышка всегда убегает. Сразу посмотреть: ?mouse ───
+const mouseEl = $('mouse'); let mouseT = 0, mouseRun = null;
+function squeak() { if (!ac) return; const t0 = ac.currentTime;
+  for (const d of [0, 0.11]) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(2300, t0 + d); o.frequency.exponentialRampToValueAtTime(3400, t0 + d + 0.07);
+    g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(0.06, t0 + d + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.08); o.connect(g); g.connect(out); o.start(t0 + d); o.stop(t0 + d + 0.1); } }
+function mouseLater(ms) { clearTimeout(mouseT); mouseT = setTimeout(mouseGo, ms); }
+function mouseGo() {
+  if (mouseRun || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (busy || !$('win').hidden || !$('start').hidden || kitty.classList.contains('taste')) { mouseLater(5000); return; }   // сейчас не до мышки — позже
+  const f = $('floor').getBoundingClientRect(), k = kitty.getBoundingClientRect(), p = pot.getBoundingClientRect(), y = f.bottom - 26;
+  const stop = p.right + 4, catX = k.left + k.width / 2 - 20, D = 3600;
+  mouseEl.hidden = false; squeak(); catMood(''); kitty.classList.add('hunt');
+  mouseRun = mouseEl.animate([{ transform: `translate(${innerWidth + 10}px,${y}px)` }, { offset: 0.38, transform: `translate(${stop}px,${y}px)` },
+    { offset: 0.56, transform: `translate(${stop}px,${y}px)` }, { offset: 0.82, transform: `translate(${catX}px,${y}px)` }, { transform: `translate(-60px,${y}px)` }], { duration: D, fill: 'forwards' });
+  const pounce = setTimeout(() => { kitty.classList.remove('hunt');                 // прыжок чуть раньше, чем мышка поравняется с котиком
+    kitty.animate([{ transform: 'none' }, { transform: 'translate(-6px,-26px) rotate(-12deg)' }, { transform: 'translate(-12px,0) scale(1.12,.86)' }, { transform: 'none' }], { duration: 650, easing: 'ease-out' }); }, D * 0.82 - 350);
+  mouseRun.onfinish = () => { clearTimeout(pounce); kitty.classList.remove('hunt'); mouseEl.hidden = true; mouseRun = null; say('Эх, убежала! 🐭', 1800); };
+}
+mouseEl.addEventListener('pointerdown', e => { e.preventDefault(); audio(); squeak(); if (mouseRun) mouseRun.playbackRate = 2; });
+
 function catTaste(then) {                                                         // подходит к кастрюле и пробует блюдо
   const k = kitty.getBoundingClientRect(), p = pot.getBoundingClientRect();
   kitty.style.setProperty('--to', Math.max(0, p.left - k.right + 22) + 'px');
@@ -319,7 +339,7 @@ function move(a, b) {                                                           
     if (won(T)) { busy = true; winAt = b; setTimeout(() => winOnce(b), 6000); }   // победа: шарики докатятся, котик попробует блюдо — окно откроет crackTube (тут — страховка)
   }, 340);
 }
-function start() { busy = false; winAt = -1; kitty.classList.remove('yum'); T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
+function start() { busy = false; winAt = -1; if (!mouseRun) { clearTimeout(mouseT); if (/[?&]mouse/.test(location.search)) mouseLater(3000); else if (Math.random() < 0.35) mouseLater(15000 + Math.random() * 30000); } kitty.classList.remove('yum'); T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
   if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; } }
 $('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
 $('undo').onclick = () => { if (busy || !hist.length) return; [T, broken] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };

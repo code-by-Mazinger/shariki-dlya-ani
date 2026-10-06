@@ -73,6 +73,15 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 #bubble{position:absolute;bottom:72px;left:50%;transform:translateX(-118px);z-index:3;border:2px solid #fff;border-radius:16px 16px 16px 4px;padding:8px 12px;
   font:inherit;font-size:15px;font-weight:700;color:var(--accent);background:rgba(255,255,255,.92);box-shadow:0 6px 18px rgba(155,93,229,.25);white-space:nowrap;cursor:pointer}
 #bubble[hidden]{display:none}
+/* мышка: иногда пробегает по полу, котик охотится (припадает и прыгает), мышка всегда убегает */
+#mouse{position:fixed;left:0;top:0;z-index:3;width:40px;height:24px;cursor:pointer}
+#mouse[hidden]{display:none}
+#mouse svg{display:block;width:100%;height:100%;overflow:visible;animation:scurry .18s ease-in-out infinite}
+#mouse .ft{animation:feet .18s linear infinite}#mouse .ft.b{animation-delay:-.09s}
+@keyframes scurry{50%{transform:translateY(-2px) rotate(-3deg)}}
+@keyframes feet{50%{transform:translateX(3px)}}
+#kitty.hunt{animation:hunt .22s ease-in-out infinite alternate}
+@keyframes hunt{from{transform:scale(1.05,.88)}to{transform:scale(1.05,.88) rotate(-4deg)}}
 #catTag{position:absolute;left:50%;bottom:-9px;z-index:1;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--accent);background:rgba(255,255,255,.88);border-radius:8px;padding:1px 6px;white-space:nowrap;cursor:pointer}
 #nameCard input{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:14px;border:2px solid #f3b6d4;outline:none;text-align:center;color:var(--ink);background:#fff}
 #nameCard .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 4px}
@@ -217,6 +226,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   </div>
 </div>
 <div id="toast"></div>
+<div id="mouse" hidden><svg viewBox="-4 0 66 38"><path d="M48 24 Q60 22 58 12 Q56 6 61 2" fill="none" stroke="#f4a6c0" stroke-width="2.5" stroke-linecap="round"/><ellipse class="ft" cx="22" cy="34" rx="4" ry="2.5" fill="#ffc2d6"/><ellipse class="ft b" cx="38" cy="34" rx="4" ry="2.5" fill="#ffc2d6"/><ellipse cx="30" cy="23" rx="20" ry="12" fill="#c3bdd3" stroke="#8f87a6" stroke-width="1.5"/><circle cx="13" cy="21" r="9" fill="#c3bdd3" stroke="#8f87a6" stroke-width="1.5"/><circle cx="18" cy="11" r="6.5" fill="#cfc9de" stroke="#8f87a6" stroke-width="1.5"/><circle cx="18" cy="11" r="3.5" fill="#ffc2d6"/><circle cx="4.5" cy="22" r="2.2" fill="#ff8fb3"/><circle cx="10" cy="18.5" r="1.9" fill="#3d2f45"/><path d="M6 23 L-2 20 M6 24 L-2 26" stroke="#8f87a6" stroke-width="1" stroke-linecap="round"/></svg></div>
 <div id="start">
   <div class="ttl">Шарики для Ани</div>
   <div class="greet" id="greet"></div>
