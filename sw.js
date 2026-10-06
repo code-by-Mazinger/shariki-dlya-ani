@@ -1,5 +1,5 @@
 // Офлайн: всё, что нужно игре, — в кэше. Новая версия — поменять VER, старый кэш удалится.
-const VER = 'sh-v14';
+const VER = 'sh-v15';
 const FILES = ['./', 'index.html', 'logic.js', 'app.js', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png',
   ...Array.from({ length: 15 }, (_, i) => `img/food/${String(i + 1).padStart(2, '0')}.jpg`), 'img/cat.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VER).then(c => c.addAll(FILES))); self.skipWaiting(); });
