@@ -43,6 +43,23 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
   background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.35) 18%,var(--c) 42%,var(--d) 100%);
   box-shadow:0 3px 8px rgba(90,40,90,.25),inset 0 -4px 8px rgba(0,0,0,.12);will-change:transform}
 .ball.lift{transition:transform .16s ease-out}
+.ball.pop{animation:pop .45s ease-out}
+@keyframes pop{0%{transform:scale(1.35)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+/* подсказка главы 2: какие цвета смешиваются */
+#legend{display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:13px;color:var(--ink2);font-weight:600}
+#legend[hidden]{display:none}
+#legend span{display:inline-flex;align-items:center;gap:3px}
+#legend i{display:inline-block;width:14px;height:14px;border-radius:50%;box-shadow:inset 0 -2px 3px rgba(0,0,0,.15)}
+.rule{display:flex;justify-content:center;align-items:center;gap:8px;font-size:22px;margin:8px 0}
+.rule i{display:inline-block;width:34px;height:34px;border-radius:50%;box-shadow:inset -4px -6px 8px rgba(0,0,0,.18),inset 4px 4px 6px rgba(255,255,255,.5)}
+/* стартовый экран: котик и «Старт» внизу */
+#start{position:fixed;inset:0;z-index:9;background:linear-gradient(160deg,#ffd6e8 0%,#f3d1ff 45%,#ffe0d0 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 20px calc(env(safe-area-inset-bottom) + 40px)}
+#start[hidden]{display:none}
+#start .ttl{position:absolute;top:calc(env(safe-area-inset-top) + 9vh);left:0;right:0;text-align:center;font-size:clamp(30px,9vw,46px);font-weight:900;
+  background:linear-gradient(90deg,#e8579a,#9b5de5);-webkit-background-clip:text;background-clip:text;color:transparent}
+#start .cat{width:min(78vw,380px);margin-bottom:5vh;filter:drop-shadow(0 14px 22px rgba(155,93,229,.3));animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#startBtn{font-size:24px;padding:18px 64px;border-radius:22px}
 /* окна: победа с картиной, галерея, просмотр картины */
 .ovl{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(255,230,245,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:5}
 .ovl[hidden]{display:none}
@@ -81,9 +98,24 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
       <button class="ib" id="snd" aria-label="Звук">♪</button>
     </div>
   </header>
+  <div id="legend" hidden><span><i style="background:#ff5468"></i>+<i style="background:#ffdc3c"></i>=<i style="background:#ff9530"></i></span><span><i style="background:#ffdc3c"></i>+<i style="background:#3f86ff"></i>=<i style="background:#4fd36e"></i></span><span><i style="background:#ff5468"></i>+<i style="background:#3f86ff"></i>=<i style="background:#a45cf0"></i></span></div>
   <div id="board"></div>
 </div>
 <div id="toast"></div>
+<div id="start">
+  <div class="ttl">Шарики для Ани</div>
+  <img class="cat" src="img/cat.svg" alt="Котик">
+  <button class="go" id="startBtn">Старт</button>
+</div>
+<div class="ovl" id="mixIntro" hidden><div class="card">
+  <h2>Новое: смешение цветов 🎨</h2>
+  <p>Положи <b>основной</b> шарик на другой основной — они сольются в новый цвет. Можно даже в полную пробирку.</p>
+  <div class="rule"><i style="background:#ff5468"></i>+<i style="background:#ffdc3c"></i>=<i style="background:#ff9530"></i></div>
+  <div class="rule"><i style="background:#ffdc3c"></i>+<i style="background:#3f86ff"></i>=<i style="background:#4fd36e"></i></div>
+  <div class="rule"><i style="background:#ff5468"></i>+<i style="background:#3f86ff"></i>=<i style="background:#a45cf0"></i></div>
+  <p><small>Цель та же — в каждой пробирке один цвет. Не смешай лишнего: ошибку можно отменить кнопкой ↶.</small></p>
+  <button class="go" id="mixGo">Понятно</button>
+</div></div>
 <div class="ovl" id="win" hidden><div class="card">
   <h2 id="winT"></h2>
   <div class="pic" id="winPic"><img alt=""><canvas></canvas></div>

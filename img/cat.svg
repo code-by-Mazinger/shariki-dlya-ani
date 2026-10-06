@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Котик стартового экрана: сидит, улыбается, бантик, рядом стеклянные шарики. Рисовано вручную (заглушка, пока нет картинки от Георгия) -->
+  <defs>
+    <radialGradient id="fur" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fffaf6"/><stop offset=".7" stop-color="#ffe6ef"/><stop offset="1" stop-color="#f7cfe0"/></radialGradient>
+    <radialGradient id="b1" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#ff9cc4"/><stop offset="1" stop-color="#d63a7d"/></radialGradient>
+    <radialGradient id="b2" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#c8a6ff"/><stop offset="1" stop-color="#7d50d8"/></radialGradient>
+    <radialGradient id="b3" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#9ff3d0"/><stop offset="1" stop-color="#25ad7e"/></radialGradient>
+  </defs>
+  <ellipse cx="200" cy="372" rx="150" ry="16" fill="#c79bd6" opacity=".25"/>
+  <!-- хвост -->
+  <path d="M290 330 C360 320 370 240 330 220 C315 213 305 228 318 236 C345 252 335 300 285 305 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3"/>
+  <!-- тело -->
+  <path d="M120 360 C105 290 120 215 200 210 C280 215 295 290 280 360 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3"/>
+  <ellipse cx="200" cy="300" rx="45" ry="50" fill="#fff" opacity=".7"/>
+  <!-- лапки -->
+  <ellipse cx="165" cy="358" rx="26" ry="14" fill="#fffaf6" stroke="#e7b3cd" stroke-width="3"/>
+  <ellipse cx="235" cy="358" rx="26" ry="14" fill="#fffaf6" stroke="#e7b3cd" stroke-width="3"/>
+  <!-- уши -->
+  <path d="M118 120 L130 45 L185 92 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M282 120 L270 45 L215 92 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M134 108 L140 66 L170 93 Z" fill="#ffb3d1"/>
+  <path d="M266 108 L260 66 L230 93 Z" fill="#ffb3d1"/>
+  <!-- голова -->
+  <ellipse cx="200" cy="150" rx="100" ry="82" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3"/>
+  <!-- бантик -->
+  <path d="M232 78 L210 62 L212 96 Z M232 78 L256 60 L256 96 Z" fill="#ff7eb3" stroke="#d63a7d" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="233" cy="79" r="8" fill="#ff5c9e" stroke="#d63a7d" stroke-width="2"/>
+  <!-- глаза: довольные дуги -->
+  <path d="M148 150 Q163 134 178 150" fill="none" stroke="#5b3a5e" stroke-width="6" stroke-linecap="round"/>
+  <path d="M222 150 Q237 134 252 150" fill="none" stroke="#5b3a5e" stroke-width="6" stroke-linecap="round"/>
+  <!-- румянец -->
+  <ellipse cx="140" cy="176" rx="18" ry="10" fill="#ff9cc4" opacity=".6"/>
+  <ellipse cx="260" cy="176" rx="18" ry="10" fill="#ff9cc4" opacity=".6"/>
+  <!-- нос и рот -->
+  <path d="M192 168 L208 168 L200 177 Z" fill="#ff7eb3"/>
+  <path d="M200 177 Q192 190 182 184 M200 177 Q208 190 218 184" fill="none" stroke="#5b3a5e" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- усы -->
+  <g stroke="#c9a0bf" stroke-width="3" stroke-linecap="round"><path d="M120 168 L80 160"/><path d="M120 178 L78 182"/><path d="M280 168 L320 160"/><path d="M280 178 L322 182"/></g>
+  <!-- шарики -->
+  <circle cx="75" cy="345" r="26" fill="url(#b1)"/>
+  <circle cx="335" cy="350" r="22" fill="url(#b2)"/>
+  <circle cx="108" cy="356" r="16" fill="url(#b3)"/>
+</svg>

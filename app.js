@@ -1,15 +1,18 @@
 'use strict';
 // Отрисовка, касания, звук, галерея. Логика уровней — logic.js (SH).
 (() => {
-const { CAP, LEVELS, canMove, doneTube, won, makeLevel, paintingOf } = SH;
+const { CAP, CH1, LEVELS, canMove, apply, doneTube, won, makeLevel, paintingOf, isMix } = SH;
 const $ = id => document.getElementById(id);
 const ls = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) { return null; } };
 
 // Конфетные цвета шариков: светлый и тёмный край для объёма. У каждого цвета своя нота пентатоники — любые сочетания звучат мягко.
 // Порядок — чтобы соседние цвета сильно различались: на первых уровнях (3–4 цвета) нет похожих оттенков
 const COLORS = [['#ff7eb3', '#d63a7d'], ['#7ff0c2', '#25ad7e'], ['#c09bff', '#7d50d8'], ['#ffe47a', '#d4ad22'], ['#74ddf3', '#1f9fc2'],
-  ['#ffbb73', '#e08326'], ['#ee8cfa', '#b13bcf'], ['#8fb2ff', '#4269d6'], ['#ff9a8a', '#e0564a'], ['#fff6ff', '#c7aed8']];
-const NOTES = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0];
+  ['#ffbb73', '#e08326'], ['#ee8cfa', '#b13bcf'], ['#8fb2ff', '#4269d6'], ['#ff9a8a', '#e0564a'], ['#fff6ff', '#c7aed8'],
+  // глава 2: основные (красный, жёлтый, синий) и смешанные (оранжевый, зелёный, фиолетовый) — чистые, «как краски»
+  ['#ff5468', '#c81e3a'], ['#ffdc3c', '#d9a500'], ['#3f86ff', '#1a4fc9'], ['#ff9530', '#d8600a'], ['#4fd36e', '#1f9a3e'], ['#a45cf0', '#6a2bbf']];
+const NOTES = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0,
+  220.0, 196.0, 164.81, 1046.5, 1174.66, 1318.51];                                // глава 2: основные — ниже, смешанные — выше (всё в пентатонике до)
 // Картины: по 3 уровня на каждую. Все — общественное достояние, источники — img/CREDITS.md
 const PAINT = [
   ['01_monet_impression', 'Впечатление. Восходящее солнце', 'Клод Моне', '1872', 'По названию этой картины критик Луи Леруа в насмешку назвал целое направление — импрессионизм.'],
@@ -21,14 +24,20 @@ const PAINT = [
   ['07_botticelli_venus', 'Рождение Венеры', 'Сандро Боттичелли', 'около 1485', 'Картина написана темперой на холсте — редкость для Флоренции того времени, где обычно писали на дереве.'],
   ['08_mucha_spring', 'Весна', 'Альфонс Муха', '1896', 'Одно из четырёх панно серии «Времена года» — декоративные литографии для украшения дома.'],
   ['09_vangogh_starry', 'Звёздная ночь', 'Винсент ван Гог', '1889', 'Ван Гог написал её в лечебнице Сен-Реми — по памяти о виде из окна своей комнаты.'],
-  ['10_klimt_kiss', 'Поцелуй', 'Густав Климт', '1907–1908', 'В картине настоящее сусальное золото — это вершина «золотого периода» Климта.']];
+  ['10_klimt_kiss', 'Поцелуй', 'Густав Климт', '1907–1908', 'В картине настоящее сусальное золото — это вершина «золотого периода» Климта.'],
+  // глава 2 — смешение: картины, где главное — цвет
+  ['11_vangogh_cafe', 'Терраса кафе ночью', 'Винсент ван Гог', '1888', 'Ван Гог писал её прямо на площади, ночью, и гордился, что обошёлся совсем без чёрной краски.'],
+  ['12_degas_dance', 'Танцевальный класс', 'Эдгар Дега', '1874', 'Балерины — любимая тема Дега: им посвящено больше половины его работ.'],
+  ['13_monet_poppies', 'Маки', 'Клод Моне', '1873', 'На тропинке — жена Моне Камилла с сыном Жаном, а красные маки — это мазки чистой краски.'],
+  ['14_seurat_jatte', 'Воскресный день на острове Гранд-Жатт', 'Жорж Сёра', '1884–1886', 'Картина сложена из тысяч мелких точек чистого цвета: смешивает их уже глаз зрителя. Сёра работал над ней два года.'],
+  ['15_kandinsky_vii', 'Композиция VII', 'Василий Кандинский', '1913', 'Кандинский «слышал» цвета как музыку — почти как в этой игре, где у каждого цвета своя нота.']];
 const img = p => `img/${PAINT[p][0]}.jpg`;
 
 let L = Math.max(1, +ls('sh_level') || 1), T = [], hist = [], sel = -1, busy = false, order = [];
 const soundOn = () => ls('sh_sound') !== '0';
 
-// ─── звук: колокольчик через мягкую реверберацию + тихий фон. Контекст — по первому касанию (иначе iPhone молчит) ───
-let ac = null, out = null, rev = null, pad = null;
+// ─── звук: колокольчик через мягкую реверберацию (фонового гула нет — убран по просьбе). Контекст — по первому касанию ───
+let ac = null, out = null, rev = null;
 function audio() {
   if (!ac) {
     try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
@@ -36,7 +45,6 @@ function audio() {
     rev = ac.createConvolver(); const len = ac.sampleRate * 2.6, b = ac.createBuffer(2, len, ac.sampleRate);
     for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
     rev.buffer = b; const wet = ac.createGain(); wet.gain.value = 0.35; rev.connect(wet); wet.connect(out);
-    startPad();
   }
   if (ac.state === 'suspended') ac.resume();
 }
@@ -47,13 +55,8 @@ function bell(f, t = 0, dur = 1.4, v = 0.22) {
   g.connect(out); g.connect(rev);
 }
 function tick() { bell(1800, 0, 0.08, 0.05); }
-function startPad() {                                                             // тихий фон: два тона и медленное «дыхание»
-  pad = ac.createGain(); pad.gain.value = 0.0; pad.connect(out); pad.connect(rev);
-  for (const f of [130.81, 196.0, 329.63]) { const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f; const k = ac.createGain(); k.gain.value = f > 300 ? 0.15 : 0.5; o.connect(k); k.connect(pad); o.start(); }
-  const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = 0.07; lg.gain.value = 0.012; lfo.connect(lg); lg.connect(pad.gain); lfo.start();
-  pad.gain.linearRampToValueAtTime(0.028, ac.currentTime + 4);
-}
-function chord(c) { const i = c; [0, 2, 4].forEach((s, k) => bell(NOTES[(i + s) % NOTES.length] * (i + s >= NOTES.length ? 2 : 1), k * 0.09, 1.8, 0.16)); }
+const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51];
+function chord(c) { const i = Math.max(0, PENTA.indexOf(NOTES[c]) % 10); [0, 2, 4].forEach((s, k) => bell(PENTA[i + s], k * 0.09, 1.8, 0.16)); }
 function melody() { order.forEach((c, k) => bell(NOTES[c], k * 0.2, 1.2, 0.2)); const e = order.length * 0.2 + 0.1; [0, 4, 7].forEach((s, k) => bell(NOTES[0] * Math.pow(2, s / 12) * 2, e + k * 0.05, 2.4, 0.13)); }
 for (const ev of ['pointerup', 'touchend']) addEventListener(ev, audio, { passive: true });
 
@@ -99,7 +102,7 @@ function render() {
     d.addEventListener('pointerdown', e => { e.preventDefault(); tap(i); });
     board.appendChild(d); });
   if (sel >= 0) lift(true);
-  $('lvl').textContent = L <= LEVELS ? `Уровень ${L} из ${LEVELS}` : `Уровень ${L} · свободная игра`;
+  $('lvl').textContent = L <= LEVELS ? `Уровень ${L} из ${LEVELS}${L > CH1 ? ' · смешение' : ''}` : `Уровень ${L} · свободная игра`;
 }
 function ballEl(c, k) { const b = document.createElement('div'); b.className = 'ball'; b.style.setProperty('--c', COLORS[c][0]); b.style.setProperty('--d', COLORS[c][1]); b.style.bottom = ballBottom(k) + 'px'; return b; }
 const tubeEl = i => board.children[i];
@@ -116,7 +119,7 @@ function tap(i) {
 function move(a, b) {                                                              // перелёт шарика: FLIP — запомнить, где был, переложить, анимировать
   busy = true; hist.push(T.map(t => t.slice()));
   const fromTube = tubeEl(a), ball = fromTube.lastElementChild, r0 = ball.getBoundingClientRect();
-  const c = T[a].pop(); T[b].push(c);
+  const c = T[a][T[a].length - 1], under = T[b][T[b].length - 1], x = apply(T, a, b);
   fromTube.classList.remove('sel'); sel = -1;
   const toTube = tubeEl(b); ball.classList.remove('lift'); ball.style.transition = 'none'; ball.style.transform = ''; ball.style.bottom = ballBottom(T[b].length - 1) + 'px';
   toTube.appendChild(ball); const r1 = ball.getBoundingClientRect();
@@ -125,11 +128,19 @@ function move(a, b) {                                                           
   bell(NOTES[c], 0.12, 1.2, 0.18);
   setTimeout(() => {
     busy = false; ball.style.transition = '';
+    if (x !== undefined) {                                                         // смешение: два шарика сливаются в один нового цвета
+      const host = ball.previousElementSibling; ball.remove();
+      host.style.setProperty('--c', COLORS[x][0]); host.style.setProperty('--d', COLORS[x][1]);
+      host.classList.remove('pop'); void host.offsetWidth; host.classList.add('pop');
+      bell(NOTES[under], 0, 1.0, 0.12); bell(NOTES[x], 0.12, 1.8, 0.2); burst(host, COLORS[x][0]);
+    }
     if (doneTube(T[b]) && T[b].length) { toTube.classList.add('done'); toTube.style.setProperty('--glow', COLORS[c][0]); chord(c); burst(toTube, COLORS[c][0]); order.push(c); }
     if (won(T)) setTimeout(win, 650);
   }, 340);
 }
-function start() { T = makeLevel(L); hist = []; sel = -1; order = []; layout(); }
+function start() { T = makeLevel(L); hist = []; sel = -1; order = []; $('legend').hidden = !isMix(L); layout();
+  if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; } }
+$('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
 $('undo').onclick = () => { if (busy || !hist.length) return; T = hist.pop(); sel = -1; render(); tick(); };
 $('restart').onclick = () => { if (busy) return; start(); tick(); };
 $('snd').onclick = () => { audio(); const on = !soundOn(); ls('sh_sound', on ? '1' : '0'); if (out) out.gain.value = on ? 0.9 : 0; $('snd').classList.toggle('off', !on); };
@@ -159,10 +170,10 @@ const infoHTML = p => `<b>«${PAINT[p][1]}»</b><br>${PAINT[p][2]}, ${PAINT[p][3
 function win() {
   melody(); const done = L; L++; ls('sh_level', L);
   const { p, part } = paintingOf(done), extra = done > LEVELS;
-  $('winT').textContent = extra ? 'Уровень пройден! ✨' : part === 3 ? (done === LEVELS ? 'Галерея собрана! 💛' : 'Картина открыта! ✨') : 'Отлично! ✨';
+  $('winT').textContent = extra ? 'Уровень пройден! ✨' : part === 3 ? (done === LEVELS ? 'Галерея собрана! 💛' : done === CH1 ? 'Глава 1 пройдена! 💛' : 'Картина открыта! ✨') : 'Отлично! ✨';
   const pp = extra ? Math.floor(Math.random() * PAINT.length) : p;
   setPic($('winPic'), pp, extra ? 3 : part, extra ? 3 : part - 1);
-  $('winInfo').innerHTML = extra || part === 3 ? infoHTML(pp) + (done === LEVELS ? '<p>Все 10 картин собраны. Дальше — свободная игра для удовольствия.</p>' : '')
+  $('winInfo').innerHTML = extra || part === 3 ? infoHTML(pp) + (done === LEVELS ? `<p>Все ${PAINT.length} картин собраны. Дальше — свободная игра для удовольствия.</p>` : done === CH1 ? '<p>Дальше — глава 2: <b>смешение цветов</b>. Красный + синий = фиолетовый!</p>' : '')
     : `Открыта часть картины: ${part} из 3.<br><small>Ещё ${3 - part} ${3 - part === 1 ? 'уровень' : 'уровня'} — и она откроется целиком.</small>`;
   $('win').hidden = false;
 }
@@ -170,7 +181,7 @@ $('next').onclick = () => { $('win').hidden = true; start(); };
 $('winGal').onclick = () => { $('win').hidden = true; start(); gallery(); };
 
 // ─── галерея: 10 картин, открытые части — по пройденным уровням ───
-const partsOf = p => Math.max(0, Math.min(3, (Math.min(L, LEVELS + 1) - 1) - p * 3));
+const partsOf = p => Math.max(0, Math.min(3, (Math.min(L, LEVELS + 1) - 1) - p * 3));   // по 3 уровня на картину
 function gallery() {
   const n = PAINT.filter((_, p) => partsOf(p) === 3).length;
   $('galSub').textContent = `Открыто картин: ${n} из ${PAINT.length}`;
@@ -191,5 +202,6 @@ function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add(
 // офлайн и «на экран Домой»: сервис-воркер кэширует игру и картины
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('resize', fit);
+$('startBtn').onclick = () => { audio(); $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
 start(); fit(); requestAnimationFrame(drawFx);
 })();
