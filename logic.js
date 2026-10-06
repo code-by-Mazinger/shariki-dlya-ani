@@ -17,7 +17,7 @@ const isMix = L => L > CH1 && (L <= LEVELS || L % 2 === 1);                     
 
 const topOf = t => t[t.length - 1];
 function canMove(T, i, j) {
-  if (i === j || !T[i].length) return false;
+  if (i === j || !T[i].length || (T[i].length === CAP && doneTube(T[i]))) return false;   // собранная пробирка — навсегда (в игре она трескается)
   if (!T[j].length) return true;
   const m = topOf(T[i]), t = topOf(T[j]);
   if (m === t) return T[j].length < CAP;
@@ -40,7 +40,6 @@ function solvable(T0, limit = 300000) {
     const k = key(T); if (seen.has(k)) continue; seen.add(k); if (++n > limit) return false;
     const mv = [];
     for (let i = 0; i < T.length; i++) {
-      if (T[i].length === CAP && doneTube(T[i]) && !(T[i][0] in { 10: 1, 11: 1, 12: 1 })) continue;   // собранную не трогаем (основные — могут уйти в смешение)
       const m = topOf(T[i]), same = T[i].length && T[i].every(c => c === m);
       for (let j = 0; j < T.length; j++) {
         if (!canMove(T, i, j)) continue;
@@ -86,7 +85,7 @@ function mixLevel(L, r) {
 // Уровень L: без уже собранных пробирок, только решаемый. Детерминирован: тот же L — тот же уровень.
 // SEEDS — номер первой удачной попытки для уровней 1–45, посчитан заранее (node selfcheck.js --seeds): в игре уровень строится
 // мгновенно, без долгой проверки решаемости. selfcheck.js проверяет, что все они решаемы.
-const SEEDS = [null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 4, 3, 3];
+const SEEDS = [null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 2];
 const build = (L, tryN) => { const r = rng(L * 7919 + tryN * 104729 + 17); return isMix(L) ? mixLevel(L, r) : classic(L, r); };
 function search(L) {
   for (let tryN = 0; ; tryN++) { const T = build(L, tryN);

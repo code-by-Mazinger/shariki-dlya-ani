@@ -33,7 +33,7 @@ const PAINT = [
   ['Клубничный торт', 'Клубнику моют прямо перед украшением и кладут на торт в последний момент — иначе она пустит сок.']];
 const img = p => `img/food/${String(p + 1).padStart(2, '0')}.jpg`;
 
-let L = Math.max(1, +ls('sh_level') || 1), T = [], hist = [], sel = -1, busy = false, order = [];
+let L = Math.max(1, +ls('sh_level') || 1), T = [], hist = [], sel = -1, busy = false, order = [], broken = [];   // broken[i] — цвет треснувшей пробирки
 const soundOn = () => ls('sh_sound') !== '0';
 
 // ─── звук: колокольчик через мягкую реверберацию (фонового гула нет — убран по просьбе). Контекст — по первому касанию ───
@@ -49,14 +49,27 @@ function audio() {
   if (ac.state === 'suspended') ac.resume();
 }
 function bell(f, t = 0, dur = 1.4, v = 0.22) {
-  if (!ac) return; const t0 = ac.currentTime + t, g = ac.createGain();
+  if (!ac || !isFinite(f)) return; const t0 = ac.currentTime + t, g = ac.createGain();   // сбой звука не должен останавливать игру
   g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + 0.008); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
   for (const [m, a] of [[1, 1], [2.001, 0.28], [3.01, 0.08]]) { const o = ac.createOscillator(), k = ac.createGain(); o.type = 'sine'; o.frequency.value = f * m; k.gain.value = a; o.connect(k); k.connect(g); o.start(t0); o.stop(t0 + dur + 0.05); }
   g.connect(out); g.connect(rev);
 }
 function tick() { bell(1800, 0, 0.08, 0.05); }
+function crackSnd() {                                                              // треск стекла: короткий шум сверху + звон осколков
+  if (!ac) return; const t0 = ac.currentTime, n = Math.floor(ac.sampleRate * 0.25), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 6);
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = b; f.type = 'highpass'; f.frequency.value = 2500; g.gain.value = 0.3;
+  s.connect(f); f.connect(g); g.connect(out); g.connect(rev); s.start(t0);
+  for (let k = 0; k < 4; k++) bell(2200 + Math.random() * 2400, 0.03 + k * 0.05, 0.5, 0.05);
+}
+function plop() {                                                                  // шарик упал в кастрюлю
+  if (!ac) return; const t0 = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.frequency.setValueAtTime(520, t0); o.frequency.exponentialRampToValueAtTime(140, t0 + 0.12);
+  g.gain.setValueAtTime(0.16, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.16); o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + 0.2);
+}
 const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51];
-function chord(c) { const i = Math.max(0, PENTA.indexOf(NOTES[c]) % 10); [0, 2, 4].forEach((s, k) => bell(PENTA[i + s], k * 0.09, 1.8, 0.16)); }
+// трезвучие i, i+2, i+4 — не дальше конца гаммы (цвет 9 выходил за конец и ронял проверку победы)
+function chord(c) { const i = Math.max(0, Math.min(PENTA.length - 5, PENTA.indexOf(NOTES[c]))); [0, 2, 4].forEach((s, k) => bell(PENTA[i + s], k * 0.09, 1.8, 0.16)); }
 function melody() { order.forEach((c, k) => bell(NOTES[c], k * 0.2, 1.2, 0.2)); const e = order.length * 0.2 + 0.1; [0, 4, 7].forEach((s, k) => bell(NOTES[0] * Math.pow(2, s / 12) * 2, e + k * 0.05, 2.4, 0.13)); }
 for (const ev of ['pointerup', 'touchend']) addEventListener(ev, audio, { passive: true });
 
@@ -74,7 +87,7 @@ function drawFx(t) {
   for (const s of stars) { const a = 0.35 + 0.65 * Math.max(0, Math.sin(t / 900 + s.p)); star(s.x * FW, s.y * FH, s.s * 2.2, `rgba(255,255,255,${a})`); }
   sparks = sparks.filter(p => (p.life -= 1) > 0);
   for (const p of sparks) { p.x += p.vx; p.y += p.vy; p.vy += 0.05; star(p.x, p.y, p.s * (p.life / 50), p.c); }
-  drawFw(); requestAnimationFrame(drawFx);
+  drawFw(); tiltStep(); requestAnimationFrame(drawFx);
 }
 function star(x, y, r, c) { g.fillStyle = c; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * 0.35 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill(); }
 function burst(el, col) { const r = el.getBoundingClientRect(); for (let i = 0; i < 26; i++) { const a = Math.random() * 6.28, v = 1 + Math.random() * 3.5;
@@ -97,6 +110,44 @@ function drawFw() {
   h.globalAlpha = 1;
 }
 
+// ─── наклон телефона: шарики перекатываются к нижнему краю пробирки, блик смещается (свет «в комнате» стоит на месте) ───
+// gamma — наклон влево-вправо (как есть: телефон набок — шарики к нижней стенке). beta — к себе/от себя: держат по-разному,
+// поэтому её «ноль» медленно подстраивается под то, как держат сейчас.
+let tx = 0, ty = 0, gx = 0, by = 0, beta0 = null;
+function onTilt(e) { if (e.gamma == null || e.beta == null) return;
+  if (beta0 === null) beta0 = e.beta; beta0 += (e.beta - beta0) * 0.01;
+  gx = Math.max(-1, Math.min(1, e.gamma / 25)); by = Math.max(-1, Math.min(1, (e.beta - beta0) / 25)); }
+function askTilt() {                                                               // iPhone спрашивает разрешение — только из нажатия (кнопка «Старт»)
+  const D = window.DeviceOrientationEvent; if (!D) return;
+  if (typeof D.requestPermission === 'function') D.requestPermission().then(s => { if (s === 'granted') addEventListener('deviceorientation', onTilt); }).catch(() => {});
+  else addEventListener('deviceorientation', onTilt);
+}
+function tiltStep() { const nx = tx + (gx - tx) * 0.15, ny = ty + (by - ty) * 0.15; if (Math.abs(nx - tx) + Math.abs(ny - ty) < 0.002) return;
+  tx = nx; ty = ny; board.style.setProperty('--tx', tx.toFixed(3)); board.style.setProperty('--ty', ty.toFixed(3)); }
+
+// ─── собранная пробирка трескается, шарики скатываются в кастрюлю внизу; кастрюля варит «суп» из собранных цветов ───
+const pot = $('pot');
+function potUpdate() { const cs = broken.filter(c => c !== undefined);
+  if (!cs.length) { pot.style.removeProperty('--soup'); pot.classList.remove('hot'); return; }
+  const rgb = cs.map(c => COLORS[c][0].match(/\w\w/g).map(h => parseInt(h, 16))), avg = [0, 1, 2].map(k => Math.round(rgb.reduce((s, v) => s + v[k], 0) / rgb.length));
+  pot.style.setProperty('--soup', `rgb(${avg})`); pot.classList.add('hot'); }
+function crackTube(b, c) {
+  broken[b] = c; T[b] = [];                                                        // логика сразу: пробирка пуста и закрыта для ходов
+  const tb = tubeEl(b), balls = [...tb.querySelectorAll('.ball')].reverse(), pr = pot.getBoundingClientRect();
+  setTimeout(() => {
+    crackSnd(); tb.classList.remove('done'); tb.classList.add('cracked');
+    balls.forEach((ball, k) => { const r = ball.getBoundingClientRect(), fly = ball.cloneNode(true); ball.remove();
+      Object.assign(fly.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', bottom: 'auto', margin: '0', width: r.width + 'px', height: r.height + 'px', zIndex: 3, transform: '', translate: '0 0' });
+      document.body.appendChild(fly);
+      const ex = pr.left + pr.width * (0.35 + Math.random() * 0.3) - r.left - r.width / 2, ey = pr.top + pr.height * 0.3 - r.top - r.height / 2, up = Math.min(ey, 0) - tw;
+      const kf = Array.from({ length: 11 }, (_, i) => { const t = i / 10, x = ex * t, y = (1 - t) * (1 - t) * 0 + 2 * (1 - t) * t * up + t * t * ey;   // дуга: подпрыгнул и покатился вниз
+        return { transform: `translate(${x}px,${y}px) rotate(${(ex >= 0 ? 1 : -1) * t * 540}deg) scale(${1 - t * 0.45})` }; });
+      fly.animate(kf, { duration: 800, delay: k * 120, easing: 'linear', fill: 'forwards' }).onfinish = () => {
+        fly.remove(); plop(); potUpdate(); pot.classList.remove('bump'); void pot.offsetWidth; pot.classList.add('bump'); burst(pot, COLORS[c][0]); };
+    });
+  }, 380);
+}
+
 // ─── поле: пробирки, раскладка под экран ───
 const board = $('board');
 let tw = 58;
@@ -113,8 +164,8 @@ function layout() {
 const ballBottom = i => tw * 0.1 + i * tw * 0.86;
 function render() {
   board.innerHTML = '';
-  T.forEach((t, i) => { const d = document.createElement('div'); d.className = 'tube' + (doneTube(t) && t.length ? ' done' : '') + (i === sel ? ' sel' : '');
-    if (doneTube(t) && t.length) d.style.setProperty('--glow', COLORS[t[0]][0]);
+  T.forEach((t, i) => { const d = document.createElement('div'); d.className = 'tube' + (doneTube(t) && t.length ? ' done' : '') + (broken[i] !== undefined ? ' cracked' : '') + (i === sel ? ' sel' : '');
+    if (doneTube(t) && t.length) d.style.setProperty('--glow', COLORS[t[0]][0]); if (broken[i] !== undefined) d.style.setProperty('--glow', COLORS[broken[i]][0]);
     t.forEach((c, k) => d.appendChild(ballEl(c, k)));
     d.addEventListener('pointerdown', e => { e.preventDefault(); tap(i); });
     board.appendChild(d); });
@@ -130,11 +181,11 @@ function tap(i) {
   if (busy) return;
   if (sel < 0) { if (T[i].length && !doneTube(T[i])) { sel = i; tubeEl(i).classList.add('sel'); lift(true); tick(); } return; }
   if (i === sel) { lift(false); tubeEl(i).classList.remove('sel'); sel = -1; return; }
-  if (!canMove(T, sel, i)) { const d = tubeEl(i); d.classList.remove('bad'); void d.offsetWidth; d.classList.add('bad'); bell(196, 0, 0.25, 0.08); return; }
+  if (broken[i] !== undefined || !canMove(T, sel, i)) { const d = tubeEl(i); d.classList.remove('bad'); void d.offsetWidth; d.classList.add('bad'); bell(196, 0, 0.25, 0.08); return; }
   move(sel, i);
 }
 function move(a, b) {                                                              // перелёт шарика: FLIP — запомнить, где был, переложить, анимировать
-  busy = true; hist.push(T.map(t => t.slice()));
+  busy = true; hist.push([T.map(t => t.slice()), broken.slice()]);
   const fromTube = tubeEl(a), ball = fromTube.lastElementChild, r0 = ball.getBoundingClientRect();
   const c = T[a][T[a].length - 1], under = T[b][T[b].length - 1], x = apply(T, a, b);
   fromTube.classList.remove('sel'); sel = -1;
@@ -151,14 +202,15 @@ function move(a, b) {                                                           
       host.classList.remove('pop'); void host.offsetWidth; host.classList.add('pop');
       bell(NOTES[under], 0, 1.0, 0.12); bell(NOTES[x], 0.12, 1.8, 0.2); burst(host, COLORS[x][0]);
     }
-    if (doneTube(T[b]) && T[b].length) { toTube.classList.add('done'); toTube.style.setProperty('--glow', COLORS[c][0]); chord(c); burst(toTube, COLORS[c][0]); order.push(c); }
-    if (won(T)) setTimeout(win, 650);
+    const full = doneTube(T[b]) && T[b].length, col = T[b][0];
+    if (full) { toTube.classList.add('done'); toTube.style.setProperty('--glow', COLORS[col][0]); chord(col); burst(toTube, COLORS[col][0]); order.push(col); crackTube(b, col); }
+    if (won(T)) setTimeout(win, full ? 1700 : 650);                                 // после трещины — дать шарикам докатиться
   }, 340);
 }
-function start() { T = makeLevel(L); hist = []; sel = -1; order = []; $('legend').hidden = !isMix(L); layout();
+function start() { T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); $('legend').hidden = !isMix(L); layout();
   if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; } }
 $('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
-$('undo').onclick = () => { if (busy || !hist.length) return; T = hist.pop(); sel = -1; render(); tick(); };
+$('undo').onclick = () => { if (busy || !hist.length) return; [T, broken] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };
 $('restart').onclick = () => { if (busy) return; start(); tick(); };
 $('snd').onclick = () => { audio(); const on = !soundOn(); ls('sh_sound', on ? '1' : '0'); if (out) out.gain.value = on ? 0.9 : 0; $('snd').classList.toggle('off', !on); };
 $('snd').classList.toggle('off', !soundOn());
@@ -221,6 +273,6 @@ function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add(
 // офлайн и «на экран Домой»: сервис-воркер кэширует игру и картинки
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('resize', fit);
-$('startBtn').onclick = () => { audio(); $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
+$('startBtn').onclick = () => { audio(); askTilt(); $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
 start(); fit(); requestAnimationFrame(drawFx);
 })();
