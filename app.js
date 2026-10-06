@@ -143,7 +143,8 @@ function crackTube(b, c) {
       const kf = Array.from({ length: 11 }, (_, i) => { const t = i / 10, x = ex * t, y = (1 - t) * (1 - t) * 0 + 2 * (1 - t) * t * up + t * t * ey;   // дуга: подпрыгнул и покатился вниз
         return { transform: `translate(${x}px,${y}px) rotate(${(ex >= 0 ? 1 : -1) * t * 540}deg) scale(${1 - t * 0.45})` }; });
       fly.animate(kf, { duration: 800, delay: k * 120, easing: 'linear', fill: 'forwards' }).onfinish = () => {
-        fly.remove(); plop(); potUpdate(); pot.classList.remove('bump'); void pot.offsetWidth; pot.classList.add('bump'); burst(pot, COLORS[c][0]); };
+        fly.remove(); plop(); potUpdate(); pot.classList.remove('bump'); void pot.offsetWidth; pot.classList.add('bump'); burst(pot, COLORS[c][0]);
+        if (k === balls.length - 1) catTaste(won(T) ? () => { kitty.classList.add('yum'); catMood('happy', 4000); purr(); hearts(); say('Вкусно! 💕', 1600); setTimeout(win, 1000); } : null); };
     });
   }, 380);
 }
@@ -151,7 +152,8 @@ function crackTube(b, c) {
 // ─── котик на поле: моргает, засыпает без дела, вздрагивает от треска, мурчит, если погладить; раз за уровень — подсказка ───
 const kitty = $('kitty'), bubble = $('bubble'); let nap = 0, moodT = 0, hintUsed = false;
 function catMood(m, ms) { kitty.classList.remove('happy', 'sleep'); if (m) kitty.classList.add(m); clearTimeout(moodT); if (ms) moodT = setTimeout(() => kitty.classList.remove(m), ms); }
-function catJump() { kitty.classList.remove('jump'); void kitty.offsetWidth; kitty.classList.add('jump'); }
+function catJump() { if (kitty.classList.contains('taste')) return; kitty.classList.remove('jump');   // у кастрюли не вздрагивает — иначе «телепорт» на место
+  void kitty.offsetWidth; kitty.classList.add('jump'); }
 function wake() { if (kitty.classList.contains('sleep')) { catMood(''); catJump(); }
   clearTimeout(nap); nap = setTimeout(() => { catMood('sleep'); bubble.hidden = true; }, 25000); }
 addEventListener('pointerdown', wake, true);
@@ -161,6 +163,13 @@ function purr() {                                                               
   for (let i = 0; i < n; i++) { w = (w + 0.02 * (Math.random() * 2 - 1)) / 1.02; x[i] = w * 3.5 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 24 * i / ac.sampleRate)) * Math.sin(Math.PI * i / n); }
   const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = b; f.type = 'lowpass'; f.frequency.value = 400; g.gain.value = 0.5;
   s.connect(f); f.connect(g); g.connect(out); s.start();
+}
+function catTaste(then) {                                                         // подходит к кастрюле и пробует блюдо
+  const k = kitty.getBoundingClientRect(), p = pot.getBoundingClientRect();
+  kitty.style.setProperty('--to', Math.max(0, p.left - k.right + 22) + 'px');
+  kitty.classList.remove('taste', 'jump', 'yum'); void kitty.offsetWidth; kitty.classList.add('taste'); catMood('happy', 1700);
+  setTimeout(() => { bell(659.25, 0, 0.5, 0.08); bell(880, 0.14, 0.7, 0.08); pot.classList.remove('bump'); void pot.offsetWidth; pot.classList.add('bump'); say('Мм! 😋', 1100); }, 650);
+  setTimeout(() => { kitty.classList.remove('taste'); if (then) then(); }, 1600);
 }
 function hearts() { const r = kitty.getBoundingClientRect();
   for (let k = 0; k < 3; k++) { const h = document.createElement('span'); h.className = 'heart'; h.textContent = '💗';
@@ -263,10 +272,10 @@ function move(a, b) {                                                           
     }
     const full = doneTube(T[b]) && T[b].length, col = T[b][0];
     if (full) { toTube.classList.add('done'); toTube.style.setProperty('--glow', COLORS[col][0]); chord(col); burst(toTube, COLORS[col][0]); order.push(col); crackTube(b, col); }
-    if (won(T)) setTimeout(win, full ? 1700 : 650);                                 // после трещины — дать шарикам докатиться
+    if (won(T)) { busy = true; setTimeout(() => { if (busy && $('win').hidden) win(); }, 6000); }   // победа: шарики докатятся, котик попробует блюдо — окно откроет crackTube (тут — страховка)
   }, 340);
 }
-function start() { T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
+function start() { busy = false; kitty.classList.remove('yum'); T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
   if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; } }
 $('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
 $('undo').onclick = () => { if (busy || !hist.length) return; [T, broken] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };

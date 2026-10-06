@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
-  <!-- Котик стартового экрана: сидит, улыбается, бантик, рядом стеклянные шарики. Рисовано вручную (заглушка, пока нет картинки от Георгия) -->
+  <!-- Котик стартового экрана: сидит, улыбается, машет лапкой, бантик, рядом стеклянные шарики. Рисовано вручную -->
+  <style>.wave{transform-box:view-box;transform-origin:140px 268px;animation:wave 3.2s ease-in-out infinite}@keyframes wave{0%,46%,100%{transform:rotate(0)}8%,24%{transform:rotate(-20deg)}16%,32%{transform:rotate(10deg)}40%{transform:rotate(-6deg)}}@media (prefers-reduced-motion:reduce){.wave{animation:none}}</style>
   <defs>
     <radialGradient id="fur" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fffaf6"/><stop offset=".7" stop-color="#ffe6ef"/><stop offset="1" stop-color="#f7cfe0"/></radialGradient>
     <radialGradient id="b1" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#ff9cc4"/><stop offset="1" stop-color="#d63a7d"/></radialGradient>
@@ -13,8 +14,10 @@
   <path d="M120 360 C105 290 120 215 200 210 C280 215 295 290 280 360 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3"/>
   <ellipse cx="200" cy="300" rx="45" ry="50" fill="#fff" opacity=".7"/>
   <!-- лапки -->
-  <ellipse cx="165" cy="358" rx="26" ry="14" fill="#fffaf6" stroke="#e7b3cd" stroke-width="3"/>
   <ellipse cx="235" cy="358" rx="26" ry="14" fill="#fffaf6" stroke="#e7b3cd" stroke-width="3"/>
+  <!-- поднятая лапка: машет -->
+  <g class="wave"><path d="M140 268 L98 206" fill="none" stroke="#e7b3cd" stroke-width="40" stroke-linecap="round"/><path d="M140 268 L98 206" fill="none" stroke="#fff1f6" stroke-width="34" stroke-linecap="round"/>
+    <ellipse cx="98" cy="209" rx="8" ry="6" fill="#ffb3d1"/><circle cx="88" cy="198" r="3.5" fill="#ffb3d1"/><circle cx="98" cy="194" r="3.5" fill="#ffb3d1"/><circle cx="108" cy="198" r="3.5" fill="#ffb3d1"/></g>
   <!-- уши -->
   <path d="M118 120 L130 45 L185 92 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3" stroke-linejoin="round"/>
   <path d="M282 120 L270 45 L215 92 Z" fill="url(#fur)" stroke="#e7b3cd" stroke-width="3" stroke-linejoin="round"/>

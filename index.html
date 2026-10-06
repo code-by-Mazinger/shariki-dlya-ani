@@ -51,7 +51,13 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 #kitty{width:58px;height:68px;flex:none;cursor:pointer;transform-origin:50% 100%;-webkit-touch-callout:none;animation:breathe 3.4s ease-in-out infinite}
 #kitty svg{display:block;width:100%;height:100%;overflow:visible}
 #kitty .eo{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
-#kitty .eh,#kitty .es,#kitty .zz,#kitty .acc{display:none}
+#kitty .eh,#kitty .es,#kitty .zz,#kitty .acc,#kitty .tongue{display:none}
+#kitty.taste .tongue,#kitty.yum .tongue{display:inline}
+/* пробует блюдо: подходит к кастрюле (--to считает app.js), наклоняется, возвращается */
+#kitty.taste{animation:taste 1.6s ease-in-out}
+@keyframes taste{0%{transform:none}12%{transform:translateX(calc(var(--to) * .5)) translateY(-7px)}24%{transform:translateX(var(--to))}38%,72%{transform:translateX(var(--to)) rotate(16deg)}86%{transform:translateX(calc(var(--to) * .4)) translateY(-6px)}100%{transform:none}}
+#kitty.yum .tongue{transform-box:fill-box;transform-origin:50% 0;animation:lick .5s ease-in-out 3}
+@keyframes lick{50%{transform:scaleY(.4)}}
 #kitty.happy .eo,#kitty.sleep .eo{display:none}#kitty.happy .eh,#kitty.sleep .es,#kitty.sleep .zz{display:inline}
 body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitty .w8{display:inline}
 #kitty .tail{transform-box:view-box;transform-origin:290px 320px;animation:wag 2.6s ease-in-out infinite}
@@ -177,6 +183,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <g class="es" fill="none" stroke="#5b3a5e" stroke-width="6" stroke-linecap="round"><path d="M150 146 Q163 157 176 146"/><path d="M224 146 Q237 157 250 146"/></g>
   <ellipse cx="140" cy="176" rx="18" ry="10" fill="#ff9cc4" opacity=".6"/><ellipse cx="260" cy="176" rx="18" ry="10" fill="#ff9cc4" opacity=".6"/>
   <path d="M192 168 L208 168 L200 177 Z" fill="#ff7eb3"/><path d="M200 177 Q192 190 182 184 M200 177 Q208 190 218 184" fill="none" stroke="#5b3a5e" stroke-width="4" stroke-linecap="round"/>
+<path class="tongue" d="M192 187 Q200 210 208 187 Z" fill="#ff7eb3" stroke="#d63a7d" stroke-width="2"/>
   <g class="acc ny"><path d="M120 84 C128 30 210 4 296 34 L338 66 C306 58 292 66 284 84 Z" fill="#e8455d"/><rect x="112" y="76" width="176" height="26" rx="13" fill="#fff"/><circle cx="340" cy="68" r="15" fill="#fff"/></g>
   <g class="acc bd"><path d="M172 84 L206 2 L240 84 Z" fill="#ffcf4d" stroke="#e0a020" stroke-width="3" stroke-linejoin="round"/><circle cx="198" cy="64" r="6" fill="#ff7eb3"/><circle cx="216" cy="44" r="5" fill="#7fd8ff"/><circle cx="204" cy="28" r="4" fill="#ff7eb3"/><circle cx="206" cy="2" r="11" fill="#ff7eb3"/></g>
   <path class="acc val" d="M200 356 C156 326 166 292 190 296 C196 297 200 304 200 309 C200 304 204 297 210 296 C234 292 244 326 200 356 Z" fill="#ff5c8a" stroke="#d63a6d" stroke-width="3"/>
