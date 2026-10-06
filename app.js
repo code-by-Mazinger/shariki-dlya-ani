@@ -273,6 +273,11 @@ function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add(
 // офлайн и «на экран Домой»: сервис-воркер кэширует игру и картинки
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 addEventListener('resize', fit);
+// вид: шарики или кейк-попсы — переключатель на стартовом экране, выбор запоминается
+const skins = document.querySelectorAll('#start .skin button');
+function skin(s) { document.body.classList.toggle('sweet', s === 'sweet'); skins.forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === s)); }
+skins.forEach(b => b.onclick = () => { audio(); ls('sh_skin', b.dataset.skin); skin(b.dataset.skin); tick(); });
+skin(ls('sh_skin') || '');
 $('startBtn').onclick = () => { audio(); askTilt(); $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
 start(); fit(); requestAnimationFrame(drawFx);
 })();

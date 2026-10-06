@@ -65,6 +65,10 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
   background:conic-gradient(rgba(255,255,255,0),rgba(255,160,215,.6),rgba(160,205,255,.6),rgba(255,245,170,.55),rgba(170,255,215,.55),rgba(255,255,255,0));
   -webkit-mask:radial-gradient(circle,transparent 45%,#000 80%);mask:radial-gradient(circle,transparent 45%,#000 80%)}
 @keyframes spin{to{transform:rotate(1turn)}}
+/* вид «кейк-попсы»: тот же шарик в глазури (цвет тот же — смешение работает), посыпка медленно вращается — кейк-попс крутится */
+body.sweet .ball{--sp:calc(var(--tw,58px) * .045);background:radial-gradient(circle at calc(32% - var(--tx,0) * 14%) calc(28% - var(--ty,0) * 14%),rgba(255,255,255,.85) 0,rgba(255,255,255,.2) 11%,var(--c) 30%,var(--d) 100%);
+  box-shadow:0 3px 8px rgba(90,40,90,.3),inset 0 -5px 7px rgba(90,40,30,.22)}
+body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#fff 90%,#0000),radial-gradient(circle var(--sp) at 48% 17%,#ff8fc3 90%,#0000),radial-gradient(circle var(--sp) at 71% 31%,#7fd8ff 90%,#0000),radial-gradient(circle var(--sp) at 37% 54%,#ffe066 90%,#0000),radial-gradient(circle var(--sp) at 63% 57%,#fff 90%,#0000),radial-gradient(circle var(--sp) at 22% 70%,#8ef0c0 90%,#0000),radial-gradient(circle var(--sp) at 50% 81%,#ff8fc3 90%,#0000),radial-gradient(circle var(--sp) at 78% 68%,#fff 90%,#0000),radial-gradient(circle var(--sp) at 84% 47%,#ffe066 90%,#0000),radial-gradient(circle var(--sp) at 14% 48%,#7fd8ff 90%,#0000);-webkit-mask:none;mask:none;animation-duration:9s}
 @media (prefers-reduced-motion:reduce){.ball::after{animation:none}}
 @keyframes pop{0%{transform:scale(1.35)}60%{transform:scale(.9)}100%{transform:scale(1)}}
 /* подсказка главы 2: какие цвета смешиваются */
@@ -79,9 +83,12 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 #start[hidden]{display:none}
 #start .ttl{position:absolute;top:calc(env(safe-area-inset-top) + 9vh);left:0;right:0;text-align:center;font-size:clamp(30px,9vw,46px);font-weight:900;
   background:linear-gradient(90deg,#e8579a,#9b5de5);-webkit-background-clip:text;background-clip:text;color:transparent}
-#start .cat{width:min(78vw,380px);margin-bottom:5vh;filter:drop-shadow(0 14px 22px rgba(155,93,229,.3));animation:bob 3.2s ease-in-out infinite}
+#start .cat{width:min(78vw,380px,44vh);margin-bottom:5vh;filter:drop-shadow(0 14px 22px rgba(155,93,229,.3));animation:bob 3.2s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 #startBtn{font-size:24px;padding:18px 64px;border-radius:22px}
+#start .skin{display:flex;gap:4px;padding:4px;margin-bottom:12px;border-radius:18px;background:rgba(255,255,255,.55);border:1.5px solid #fff;box-shadow:0 6px 18px rgba(155,93,229,.18)}
+#start .skin button{border:0;border-radius:14px;padding:10px 16px;font:inherit;font-size:16px;font-weight:700;color:var(--ink2);background:none;cursor:pointer}
+#start .skin button[aria-pressed=true]{background:#fff;color:var(--accent);box-shadow:0 2px 8px rgba(232,87,154,.25)}
 /* окна: победа с блюдом, альбом, просмотр блюда */
 .ovl{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(255,230,245,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:5}
 .ovl[hidden]{display:none}
@@ -128,6 +135,7 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 <div id="start">
   <div class="ttl">Шарики для Ани</div>
   <img class="cat" src="img/cat.svg" alt="Котик">
+  <div class="skin" role="group" aria-label="Вид"><button data-skin="" aria-pressed="true">🔮 Шарики</button><button data-skin="sweet" aria-pressed="false">🍭 Кейк-попсы</button></div>
   <button class="go" id="startBtn">Старт</button>
 </div>
 <div class="ovl" id="mixIntro" hidden><div class="card">
