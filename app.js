@@ -405,6 +405,8 @@ function gallery() {
   $('grid').innerHTML = PAINT.map((_, p) => `<div class="cell" data-p="${p}"><img alt=""><canvas></canvas>${partsOf(p) === 3 ? `<b>${PAINT[p][0]}</b>` : ''}</div>`).join('');
   $('gallery').hidden = false;
   [...$('grid').children].forEach(cel => { const p = +cel.dataset.p; setPic(cel, p, partsOf(p), partsOf(p)); });
+  photoKeys().then(ks => { ks.forEach(p => { const c = $('grid').children[p]; if (c) c.insertAdjacentHTML('beforeend', '<i class="ck" title="Приготовлено">✓</i>'); });
+    if (ks.length) $('galSub').textContent += ` · приготовлено: ${ks.length}`; }).catch(() => {});
 }
 const recipeHTML = p => `<div class="recipe"><h3>📖 Рецепт</h3><b>Понадобится</b><ul>${RECIPES[p][0].map(x => `<li>${x}</li>`).join('')}</ul>`
   + `<b>Как готовить</b><ol>${RECIPES[p][1].map(x => `<li>${x}</li>`).join('')}</ol></div>`;
@@ -412,9 +414,55 @@ function openView(p) { const parts = partsOf(p);
   if (!parts) { toast('Пока закрыта'); return; }
   $('view').hidden = false; setPic($('viewPic'), p, parts, parts); $('view').querySelector('.card').scrollTop = 0;
   $('viewT').textContent = parts === 3 ? PAINT[p][0] : 'Блюдо ещё готовится';
-  $('viewInfo').innerHTML = parts === 3 ? `<small>Секрет повара: ${PAINT[p][1]}</small>` + recipeHTML(p) : `Открыто ${parts} из 3 частей. Рецепт откроется вместе с блюдом.`; }
+  $('viewInfo').innerHTML = parts === 3 ? `<small>Секрет повара: ${PAINT[p][1]}</small><div class="diary" id="diary"></div>` + recipeHTML(p) : `Открыто ${parts} из 3 частей. Рецепт откроется вместе с блюдом.`;
+  viewP = p; if (parts === 3) diary(p); }
 $('grid').onclick = e => { const cel = e.target.closest('.cell'); if (cel) openView(+cel.dataset.p); };
 $('winInfo').onclick = e => { const b = e.target.closest('[data-recipe]'); if (b) openView(+b.dataset.recipe); };
+
+// ─── кулинарный дневник: «Я приготовила! 📸» — своё фото к блюду. Хранится только в этом телефоне (IndexedDB), уменьшено до 900 px ───
+let viewP = -1;
+const DB = new Promise((res, rej) => { try { const r = indexedDB.open('shariki', 1); r.onupgradeneeded = () => r.result.createObjectStore('photos');
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); DB.catch(() => {});
+const idb = (mode, fn) => DB.then(db => new Promise((res, rej) => { const tx = db.transaction('photos', mode), q = fn(tx.objectStore('photos'));
+  tx.oncomplete = () => res(q.result); tx.onerror = tx.onabort = () => rej(tx.error); }));
+const photoGet = p => idb('readonly', s => s.get(p)), photoSet = (p, v) => idb('readwrite', s => s.put(v, p)),
+  photoDel = p => idb('readwrite', s => s.delete(p)), photoKeys = () => idb('readonly', s => s.getAllKeys());
+function shrink(file) {                                                            // фото с камеры — до 900 px, JPEG: хватит для книги и не забьёт память
+  return new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const k = Math.min(1, 900 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', 0.82)); };
+    im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('не картинка')); }; im.src = u; });
+}
+function diary(p) {
+  photoGet(p).then(d => { const box = $('diary'); if (!box || viewP !== p) return;
+    box.innerHTML = d ? `<h3>📸 Моё блюдо</h3><img class="mine" alt="Моё блюдо" src="${d}"><div class="row"><button class="go ghost small" data-act="photo">Заменить фото</button><button class="go ghost small" data-act="del">Убрать</button></div>`
+      : `<p><small>Приготовила по рецепту? Сфотографируй — фото останется в книге.</small></p><button class="go small" data-act="photo">Я приготовила! 📸</button>`; })
+    .catch(() => { const box = $('diary'); if (box) box.innerHTML = '<p><small>Дневник в этом браузере недоступен.</small></p>'; });
+}
+$('viewInfo').onclick = e => { const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.dataset.act === 'photo') $('photoIn').click();
+  else if (confirm('Убрать фото из книги?')) photoDel(viewP).then(() => diary(viewP)).catch(() => toast('Не получилось 😿')); };
+$('photoIn').onchange = () => { const f = $('photoIn').files[0], p = viewP; if (!f) return;
+  shrink(f).then(d => photoSet(p, d)).then(() => { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); diary(p); toast('В книге! 💕'); })
+    .catch(() => toast('Не получилось сохранить 😿')).finally(() => { $('photoIn').value = ''; }); };
+
+// ─── игра на экране «Домой». На iPhone Сафари стирает данные сайта, если его 7 дней не открывать; у приложения с иконки — нет.
+// Но у такого приложения на iPhone своя память, не общая с Сафари, — уровень переносим вручную (по нему восстанавливается и альбом) ───
+const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (!standalone && matchMedia('(pointer: coarse)').matches) { document.body.classList.add('web'); $('a2hs').hidden = false; }
+if (standalone && !ls('sh_level')) $('moveBtn').hidden = false;
+$('a2hs').onclick = () => { $('a2hsText').innerHTML = ios
+  ? `<ol class="steps"><li>Внизу Сафари нажми «Поделиться» — квадрат со стрелкой ⬆️.</li><li>Пролистай вниз и выбери «На экран „Домой“», потом «Добавить».</li><li>Дальше открывай игру с иконки «Шарики».</li></ol>`
+    + `<p>У приложения на iPhone своя память, поэтому уровень нужно перенести: в приложении нажми «Перенести прогресс» и введи <b>${L}</b>. Фото в дневник делай уже в приложении.</p>`
+  : `<ol class="steps"><li>Нажми меню браузера ⋮.</li><li>Выбери «Добавить на главный экран» или «Установить приложение».</li><li>Дальше открывай игру с иконки «Шарики» — прогресс останется тот же.</li></ol>`;
+  $('a2hsCard').hidden = false; };
+$('a2hsOk').onclick = () => { $('a2hsCard').hidden = true; };
+$('moveBtn').onclick = () => { $('moveCard').hidden = false; };
+$('moveNo').onclick = () => { $('moveCard').hidden = true; };
+$('moveGo').onclick = () => { const n = Math.floor(+$('moveIn').value); if (!(n >= 1 && n <= 999)) { $('moveIn').focus(); return; }
+  L = n; ls('sh_level', L); $('moveCard').hidden = true; $('moveBtn').hidden = true; start(); toast(`Уровень ${L} ✨`); };
 $('gal').onclick = gallery;
 $('galBack').onclick = () => { $('gallery').hidden = true; };
 $('viewBack').onclick = () => { $('view').hidden = true; };

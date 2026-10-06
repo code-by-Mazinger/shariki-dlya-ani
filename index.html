@@ -83,7 +83,7 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 #kitty.hunt{animation:hunt .22s ease-in-out infinite alternate}
 @keyframes hunt{from{transform:scale(1.05,.88)}to{transform:scale(1.05,.88) rotate(-4deg)}}
 #catTag{position:absolute;left:50%;bottom:-9px;z-index:1;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--accent);background:rgba(255,255,255,.88);border-radius:8px;padding:1px 6px;white-space:nowrap;cursor:pointer}
-#nameCard input{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:14px;border:2px solid #f3b6d4;outline:none;text-align:center;color:var(--ink);background:#fff}
+#moveIn,#nameCard input{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:14px;border:2px solid #f3b6d4;outline:none;text-align:center;color:var(--ink);background:#fff}
 #nameCard .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 4px}
 #nameCard .chips button{border:1.5px solid #f3b6d4;background:rgba(255,255,255,.8);border-radius:12px;padding:6px 12px;font:inherit;font-size:15px;color:var(--accent);cursor:pointer}
 /* рецепт в окне блюда */
@@ -91,6 +91,17 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 .recipe h3{margin:0 0 6px;font-size:17px;color:var(--accent);text-align:center}
 .recipe ul,.recipe ol{margin:4px 0 10px;padding-left:22px}.recipe li{margin:3px 0}
 .go.small{font-size:15px;padding:8px 18px;margin-top:6px}
+/* дневник и значок «приготовлено» */
+.diary{margin-top:10px}.diary h3{margin:0 0 6px;font-size:17px;color:var(--accent)}
+.diary img.mine{display:block;width:100%;border-radius:14px;box-shadow:0 6px 18px rgba(90,40,90,.2);margin-bottom:4px}
+#grid .cell .ck{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-style:normal;font-size:13px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+/* стартовый экран: ссылки «на экран Домой» и «перенести прогресс»; котик чуть меньше, чтобы всё влезло */
+#start .link{border:0;background:rgba(255,255,255,.6);border-radius:14px;padding:8px 14px;margin-bottom:10px;font:inherit;font-size:14px;font-weight:700;color:var(--accent);cursor:pointer}
+#start .link[hidden]{display:none}
+#a2hsCard,#moveCard{z-index:10}   /* открываются со стартового экрана (у него z-index 9) */
+body.web #start .cat{width:min(70vw,340px,36vh)}
+.steps{text-align:left;margin:6px 0;padding-left:22px;line-height:1.45}.steps li{margin:4px 0}
 /* блюдо вылетает из кастрюли: пар и картинка поверх окна победы; карточка проявляется после */
 #win .card{transition:opacity .35s}#win.rise .card{opacity:0}
 .riser{position:fixed;z-index:7;object-fit:cover;pointer-events:none;box-shadow:0 8px 26px rgba(90,40,90,.3)}
@@ -178,7 +189,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
 #grid .cell canvas{position:absolute;inset:0;width:100%;height:100%}
 #grid .cell b{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 6px;font-size:11px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);text-align:left;
   background:linear-gradient(transparent,rgba(40,10,40,.6))}
-#toast{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);font-size:26px;font-weight:800;color:var(--accent);text-shadow:0 2px 12px #fff;
+#toast{z-index:11!important;position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);font-size:26px;font-weight:800;color:var(--accent);text-shadow:0 2px 12px #fff;
   pointer-events:none;opacity:0;transition:opacity .3s;z-index:4;white-space:nowrap}
 #toast.on{opacity:1}
 </style>
@@ -231,6 +242,8 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <div class="ttl">Шарики для Ани</div>
   <div class="greet" id="greet"></div>
   <img class="cat" src="img/cat.svg" alt="Котик">
+  <button class="link" id="moveBtn" hidden>Уже играла в Сафари? Перенести прогресс</button>
+  <button class="link" id="a2hs" hidden>📲 Сохрани игру на экран «Домой» — как?</button>
   <div class="skin" role="group" aria-label="Вид"><button data-skin="" aria-pressed="true">🔮 Шарики</button><button data-skin="sweet" aria-pressed="false">🍭 Кейк-попсы</button></div>
   <button class="go" id="startBtn">Старт</button>
 </div>
@@ -262,6 +275,19 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <div class="chips"><button>Мурка</button><button>Персик</button><button>Зефирка</button><button>Пончик</button></div>
   <button class="go" id="nameGo">Готово</button>
 </div></div>
+<div class="ovl" id="a2hsCard" hidden><div class="card">
+  <h2>Игра на экране «Домой» 📲</h2>
+  <p>Так она откроется как приложение, и пройденные уровни, альбом и фото не потеряются.</p>
+  <div id="a2hsText"></div>
+  <button class="go" id="a2hsOk">Понятно</button>
+</div></div>
+<div class="ovl" id="moveCard" hidden><div class="card">
+  <h2>Перенести прогресс ✨</h2>
+  <p>Введи уровень, до которого дошла в Сафари, — подсказка «Как?» там его показывает.</p>
+  <input id="moveIn" type="number" inputmode="numeric" min="1" max="999" placeholder="Номер уровня">
+  <div class="row"><button class="go ghost" id="moveNo">Не надо</button><button class="go" id="moveGo">Перенести</button></div>
+</div></div>
+<input type="file" id="photoIn" accept="image/*" hidden>
 <div class="ovl" id="view" hidden><div class="card">
   <div class="pic" id="viewPic"><img alt=""><canvas></canvas></div>
   <h2 id="viewT"></h2>
