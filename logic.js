@@ -17,7 +17,8 @@ const isMix = L => L > CH1 && (L <= LEVELS || L % 2 === 1);                     
 
 const topOf = t => t[t.length - 1];
 function canMove(T, i, j) {
-  if (i === j || !T[i].length || (T[i].length === CAP && doneTube(T[i]))) return false;   // собранная пробирка — навсегда (в игре она трескается)
+  const fin = t => t.length === CAP && doneTube(t);                                // собранная пробирка — навсегда (в игре она трескается):
+  if (i === j || !T[i].length || fin(T[i]) || fin(T[j])) return false;            // ни взять из неё, ни смешать на ней
   if (!T[j].length) return true;
   const m = topOf(T[i]), t = topOf(T[j]);
   if (m === t) return T[j].length < CAP;
@@ -31,12 +32,13 @@ function apply(T, i, j) {                                                       
 const doneTube = t => t.length === 0 || (t.length === CAP && t.every(c => c === t[0]));
 const won = T => T.every(doneTube);
 
-// Решаемость: поиск в глубину с памятью состояний (порядок пробирок не важен) и лимитом
+// Решаемость: поиск в глубину с памятью состояний (порядок пробирок не важен) и лимитом.
+// Возвращает первый ход найденного решения [i, j] (подсказка котика), true — если уже решено, false — решения не нашлось.
 function solvable(T0, limit = 300000) {
   const seen = new Set(), key = T => T.map(t => t.join(',')).sort().join('|');
-  const st = [T0.map(t => t.slice())]; let n = 0;
+  const st = [[T0.map(t => t.slice()), null]]; let n = 0;
   while (st.length) {
-    const T = st.pop(); if (won(T)) return true;
+    const [T, first] = st.pop(); if (won(T)) return first || true;
     const k = key(T); if (seen.has(k)) continue; seen.add(k); if (++n > limit) return false;
     const mv = [];
     for (let i = 0; i < T.length; i++) {
@@ -45,10 +47,10 @@ function solvable(T0, limit = 300000) {
         if (!canMove(T, i, j)) continue;
         if (same && T[j].length === 0) continue;                                   // однородную — в пустую: ход впустую
         const U = T.map(t => t.slice()); apply(U, i, j);
-        mv.push([T[j].length === 0 ? 0 : topOf(T[j]) === m ? 2 : 1, U]);              // в пустую — 0, смешение — 1, на свой цвет — 2
+        mv.push([T[j].length === 0 ? 0 : topOf(T[j]) === m ? 2 : 1, U, first || [i, j]]);              // в пустую — 0, смешение — 1, на свой цвет — 2
       }
     }
-    mv.sort((a, b) => a[0] - b[0]); for (const [, U] of mv) st.push(U);             // удачные ходы — последними в стек, т.е. пробуются первыми
+    mv.sort((a, b) => a[0] - b[0]); for (const [, U, f] of mv) st.push([U, f]);             // удачные ходы — последними в стек, т.е. пробуются первыми
   }
   return false;
 }
@@ -85,7 +87,7 @@ function mixLevel(L, r) {
 // Уровень L: без уже собранных пробирок, только решаемый. Детерминирован: тот же L — тот же уровень.
 // SEEDS — номер первой удачной попытки для уровней 1–45, посчитан заранее (node selfcheck.js --seeds): в игре уровень строится
 // мгновенно, без долгой проверки решаемости. selfcheck.js проверяет, что все они решаемы.
-const SEEDS = [null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 2];
+const SEEDS = [null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 2];
 const build = (L, tryN) => { const r = rng(L * 7919 + tryN * 104729 + 17); return isMix(L) ? mixLevel(L, r) : classic(L, r); };
 function search(L) {
   for (let tryN = 0; ; tryN++) { const T = build(L, tryN);

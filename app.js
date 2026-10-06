@@ -87,7 +87,7 @@ function drawFx(t) {
   for (const s of stars) { const a = 0.35 + 0.65 * Math.max(0, Math.sin(t / 900 + s.p)); star(s.x * FW, s.y * FH, s.s * 2.2, `rgba(255,255,255,${a})`); }
   sparks = sparks.filter(p => (p.life -= 1) > 0);
   for (const p of sparks) { p.x += p.vx; p.y += p.vy; p.vy += 0.05; star(p.x, p.y, p.s * (p.life / 50), p.c); }
-  drawFw(); tiltStep(); requestAnimationFrame(drawFx);
+  drawFall(t); drawFw(); tiltStep(); requestAnimationFrame(drawFx);
 }
 function star(x, y, r, c) { g.fillStyle = c; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * 0.35 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill(); }
 function burst(el, col) { const r = el.getBoundingClientRect(); for (let i = 0; i < 26; i++) { const a = Math.random() * 6.28, v = 1 + Math.random() * 3.5;
@@ -135,7 +135,7 @@ function crackTube(b, c) {
   broken[b] = c; T[b] = [];                                                        // логика сразу: пробирка пуста и закрыта для ходов
   const tb = tubeEl(b), balls = [...tb.querySelectorAll('.ball')].reverse(), pr = pot.getBoundingClientRect();
   setTimeout(() => {
-    crackSnd(); tb.classList.remove('done'); tb.classList.add('cracked');
+    crackSnd(); catJump(); tb.classList.remove('done'); tb.classList.add('cracked');
     balls.forEach((ball, k) => { const r = ball.getBoundingClientRect(), fly = ball.cloneNode(true); ball.remove();
       Object.assign(fly.style, { position: 'fixed', left: r.left + 'px', top: r.top + 'px', bottom: 'auto', margin: '0', width: r.width + 'px', height: r.height + 'px', zIndex: 3, transform: '', translate: '0 0' });
       document.body.appendChild(fly);
@@ -146,6 +146,65 @@ function crackTube(b, c) {
         fly.remove(); plop(); potUpdate(); pot.classList.remove('bump'); void pot.offsetWidth; pot.classList.add('bump'); burst(pot, COLORS[c][0]); };
     });
   }, 380);
+}
+
+// ─── котик на поле: моргает, засыпает без дела, вздрагивает от треска, мурчит, если погладить; раз за уровень — подсказка ───
+const kitty = $('kitty'), bubble = $('bubble'); let nap = 0, moodT = 0, hintUsed = false;
+function catMood(m, ms) { kitty.classList.remove('happy', 'sleep'); if (m) kitty.classList.add(m); clearTimeout(moodT); if (ms) moodT = setTimeout(() => kitty.classList.remove(m), ms); }
+function catJump() { kitty.classList.remove('jump'); void kitty.offsetWidth; kitty.classList.add('jump'); }
+function wake() { if (kitty.classList.contains('sleep')) { catMood(''); catJump(); }
+  clearTimeout(nap); nap = setTimeout(() => { catMood('sleep'); bubble.hidden = true; }, 25000); }
+addEventListener('pointerdown', wake, true);
+function say(t, ms) { bubble.textContent = t; bubble.hidden = false; clearTimeout(say.t); say.t = setTimeout(() => { bubble.hidden = true; }, ms); }
+function purr() {                                                                  // мурчание: низкий шум, пульсирующий ~24 раза в секунду
+  if (!ac) return; const n = Math.floor(ac.sampleRate * 0.9), b = ac.createBuffer(1, n, ac.sampleRate), x = b.getChannelData(0); let w = 0;
+  for (let i = 0; i < n; i++) { w = (w + 0.02 * (Math.random() * 2 - 1)) / 1.02; x[i] = w * 3.5 * (0.5 + 0.5 * Math.sin(2 * Math.PI * 24 * i / ac.sampleRate)) * Math.sin(Math.PI * i / n); }
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = b; f.type = 'lowpass'; f.frequency.value = 400; g.gain.value = 0.5;
+  s.connect(f); f.connect(g); g.connect(out); s.start();
+}
+function hearts() { const r = kitty.getBoundingClientRect();
+  for (let k = 0; k < 3; k++) { const h = document.createElement('span'); h.className = 'heart'; h.textContent = '💗';
+    Object.assign(h.style, { left: r.left + r.width * (0.15 + k * 0.25) + 'px', top: r.top + 'px', animationDelay: k * 0.15 + 's' });
+    document.body.appendChild(h); setTimeout(() => h.remove(), 1800); } }
+kitty.addEventListener('pointerdown', e => { e.preventDefault(); audio(); purr(); catMood('happy', 1600); hearts();
+  if (!hintUsed && !won(T)) say('Подсказать? 🐾', 4000); });
+bubble.addEventListener('pointerdown', e => { e.preventDefault(); if (bubble.textContent.startsWith('Подсказать')) hint(); else bubble.hidden = true; });
+function hint() {                                                                  // треснувшие пробирки для решателя — снова собранные (их не трогают)
+  if (busy) return; bubble.hidden = true;
+  if (sel >= 0) { lift(false); tubeEl(sel).classList.remove('sel'); sel = -1; }
+  const mv = SH.solvable(T.map((t, i) => broken[i] !== undefined ? Array(CAP).fill(broken[i]) : t.slice()), 60000);
+  if (!Array.isArray(mv)) { say('Хм… не вижу хода. Попробуй отменить ↶', 3500); return; }
+  hintUsed = true; catMood('happy', 1200); tick();
+  tubeEl(mv[0]).classList.add('hint'); setTimeout(() => { const t = tubeEl(mv[1]); if (t && board.querySelector('.hint')) t.classList.add('hint2'); }, 500);
+}
+
+// ─── праздники по календарю: снег, сердечки, лепестки, конфетти; котик в шапочке; поздравление на старте.
+// Посмотреть заранее: ?holiday=ny (Новый год) | val (14 февраля) | w8 (8 Марта) | bd (день рождения)
+const BDAY = null;                                                                 // день рождения Ани 'ММ-ДД' — пришлёт Георгий
+const HOLI = { bd: [BDAY, BDAY, 'С днём рождения, Аня! 🎂'], ny: ['12-25', '01-08', 'С Новым годом! ❄️'], val: ['02-13', '02-15', 'С Днём святого Валентина! 💕'], w8: ['03-07', '03-09', 'С 8 Марта! 🌷'] };
+function holiday() {
+  const q = new URLSearchParams(location.search).get('holiday'); if (q && q in HOLI) return q;
+  const d = new Date(), md = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  for (const k in HOLI) { const [a, b] = HOLI[k]; if (a && (a <= b ? md >= a && md <= b : md >= a || md <= b)) return k; }   // Новый год — через смену года
+  return '';
+}
+const HOL = holiday(); if (HOL) { document.body.classList.add('h-' + HOL); $('greet').textContent = HOLI[HOL][2]; }
+const fall = HOL ? Array.from({ length: 36 }, () => ({ x: Math.random(), y: Math.random(), v: 0.0006 + Math.random() * 0.0012, s: 3 + Math.random() * 4, p: Math.random() * 6.28,
+  c: ['#ff7eb3', '#ffe066', '#7fd8ff', '#8ef0c0', '#c09bff'][Math.floor(Math.random() * 5)] })) : [];
+function drawFall(t) {
+  for (const f of fall) { f.y += f.v; if (f.y > 1.05) { f.y = -0.05; f.x = Math.random(); }
+    g.save(); g.translate(f.x * FW + Math.sin(t / 1100 + f.p) * 18, f.y * FH); g.rotate(t / 900 + f.p);
+    if (HOL === 'ny') { g.fillStyle = '#fff'; g.strokeStyle = 'rgba(155,130,210,.35)'; g.beginPath(); g.arc(0, 0, f.s * 0.6, 0, 7); g.fill(); g.stroke(); }
+    else if (HOL === 'val') { const s = f.s * 1.6; g.fillStyle = 'rgba(255,92,138,.8)'; g.beginPath(); g.moveTo(0, s * 0.3);
+      g.bezierCurveTo(-s, -s * 0.4, -s * 0.4, -s, 0, -s * 0.35); g.bezierCurveTo(s * 0.4, -s, s, -s * 0.4, 0, s * 0.3); g.fill(); }
+    else if (HOL === 'w8') { g.fillStyle = 'rgba(255,150,190,.85)'; g.beginPath(); g.ellipse(0, 0, f.s * 1.2, f.s * 0.6, 0, 0, 7); g.fill(); }
+    else { g.fillStyle = f.c; g.fillRect(-f.s / 2, -f.s / 4, f.s * 1.2, f.s / 2); }
+    g.restore(); }
+}
+function birthdaySong() {                                                          // «С днём рождения тебя» — колокольчиками
+  const F = { G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99 }; let t = 0.4;
+  for (const [n, d] of [['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['C5', 1], ['B4', 2], ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['D5', 1], ['C5', 2],
+    ['G4', .75], ['G4', .25], ['G5', 1], ['E5', 1], ['C5', 1], ['B4', 1], ['A4', 2], ['F5', .75], ['F5', .25], ['E5', 1], ['C5', 1], ['D5', 1], ['C5', 3]]) { bell(F[n], t, 1.3, 0.16); t += d * 0.36; }
 }
 
 // ─── поле: пробирки, раскладка под экран ───
@@ -178,7 +237,7 @@ function lift(on) { const tb = tubeEl(sel); if (!tb) return; const b = tb.lastEl
   b.classList.add('lift'); b.style.transform = on ? `translateY(${-(tw * 3.9 - ballBottom(T[sel].length - 1) - tw * 0.78 + tw * 0.55)}px)` : ''; }
 
 function tap(i) {
-  if (busy) return;
+  if (busy) return; board.querySelectorAll('.hint,.hint2').forEach(t => t.classList.remove('hint', 'hint2'));
   if (sel < 0) { if (T[i].length && !doneTube(T[i])) { sel = i; tubeEl(i).classList.add('sel'); lift(true); tick(); } return; }
   if (i === sel) { lift(false); tubeEl(i).classList.remove('sel'); sel = -1; return; }
   if (broken[i] !== undefined || !canMove(T, sel, i)) { const d = tubeEl(i); d.classList.remove('bad'); void d.offsetWidth; d.classList.add('bad'); bell(196, 0, 0.25, 0.08); return; }
@@ -207,7 +266,7 @@ function move(a, b) {                                                           
     if (won(T)) setTimeout(win, full ? 1700 : 650);                                 // после трещины — дать шарикам докатиться
   }, 340);
 }
-function start() { T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); $('legend').hidden = !isMix(L); layout();
+function start() { T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
   if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; } }
 $('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
 $('undo').onclick = () => { if (busy || !hist.length) return; [T, broken] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };
@@ -242,6 +301,7 @@ function win() {
   const { p, part } = paintingOf(done), extra = done > LEVELS;
   $('winT').textContent = extra ? 'Уровень пройден! ✨' : part === 3 ? (done === LEVELS ? 'Альбом собран! 💛' : done === CH1 ? 'Глава 1 пройдена! 💛' : 'Блюдо готово! ✨') : 'Отлично! ✨';
   const pp = extra ? Math.floor(Math.random() * PAINT.length) : p;
+  catMood('happy', 4000);
   $('win').hidden = false;                                                         // сначала показать: у скрытого окна нулевой размер, мозаика не нарисуется
   setPic($('winPic'), pp, extra ? 3 : part, extra ? 3 : part - 1);
   if (part === 3 && !extra) fireworks();
@@ -278,6 +338,6 @@ const skins = document.querySelectorAll('#start .skin button');
 function skin(s) { document.body.classList.toggle('sweet', s === 'sweet'); skins.forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === s)); }
 skins.forEach(b => b.onclick = () => { audio(); ls('sh_skin', b.dataset.skin); skin(b.dataset.skin); tick(); });
 skin(ls('sh_skin') || '');
-$('startBtn').onclick = () => { audio(); askTilt(); $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
+$('startBtn').onclick = () => { audio(); askTilt(); if (HOL === 'bd') { birthdaySong(); fireworks(); } $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
 start(); fit(); requestAnimationFrame(drawFx);
 })();
