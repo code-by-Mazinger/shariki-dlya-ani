@@ -421,7 +421,13 @@ $('viewBack').onclick = () => { $('view').hidden = true; };
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1200); }
 
 // офлайн и «на экран Домой»: сервис-воркер кэширует игру и картинки
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  // Телефон держит вкладку в памяти и при возврате показывает старую страницу. Поэтому: вернулись в игру — проверить версию;
+  // пришла новая — перезагрузиться (уровень хранится в localStorage). Только если версия уже была — не при первом посещении.
+  const had = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then(reg => document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); })).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (had) location.reload(); });
+}
 addEventListener('resize', fit);
 // вид: шарики или кейк-попсы — переключатель на стартовом экране, выбор запоминается
 const skins = document.querySelectorAll('#start .skin button');
