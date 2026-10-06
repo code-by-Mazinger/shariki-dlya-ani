@@ -21,6 +21,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,"SF Pro
 body{background:linear-gradient(135deg,#ffd6e8 0%,#f3d1ff 35%,#d9d4ff 60%,#ffe0d0 100%);background-size:300% 300%;animation:sky 24s ease-in-out infinite}
 @keyframes sky{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 #fx{position:fixed;inset:0;pointer-events:none}
+#fw{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:6}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px)}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;letter-spacing:.02em;background:linear-gradient(90deg,#e8579a,#9b5de5);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -44,6 +45,12 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
   box-shadow:0 3px 8px rgba(90,40,90,.25),inset 0 -4px 8px rgba(0,0,0,.12);will-change:transform}
 .ball.lift{transition:transform .16s ease-out}
 .ball.pop{animation:pop .45s ease-out}
+/* перламутр: радужный отлив по краю шарика медленно вращается — шарик будто поворачивается (у каждого своя фаза --ph) */
+.ball::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;animation:spin 5s linear infinite;animation-delay:var(--ph,0s);
+  background:conic-gradient(rgba(255,255,255,0),rgba(255,160,215,.6),rgba(160,205,255,.6),rgba(255,245,170,.55),rgba(170,255,215,.55),rgba(255,255,255,0));
+  -webkit-mask:radial-gradient(circle,transparent 45%,#000 80%);mask:radial-gradient(circle,transparent 45%,#000 80%)}
+@keyframes spin{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){.ball::after{animation:none}}
 @keyframes pop{0%{transform:scale(1.35)}60%{transform:scale(.9)}100%{transform:scale(1)}}
 /* подсказка главы 2: какие цвета смешиваются */
 #legend{display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:13px;color:var(--ink2);font-weight:600}
@@ -87,7 +94,7 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 </style>
 </head>
 <body>
-<canvas id="fx"></canvas>
+<canvas id="fx"></canvas><canvas id="fw"></canvas>
 <div id="app">
   <header>
     <div><h1>Шарики для Ани</h1><div id="lvl"></div></div>

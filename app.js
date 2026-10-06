@@ -65,7 +65,7 @@ const fx = $('fx'), g = fx.getContext('2d'); let FW = 0, FH = 0, dpr = 1;
 const bokeh = Array.from({ length: 14 }, () => ({ x: Math.random(), y: Math.random(), r: 40 + Math.random() * 90, v: 0.00004 + Math.random() * 0.00008, h: [330, 290, 260, 20][Math.floor(Math.random() * 4)] }));
 const stars = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random(), p: Math.random() * 6.28, s: 0.6 + Math.random() * 1.4 }));
 let sparks = [];
-function fit() { dpr = Math.min(devicePixelRatio || 1, 2); FW = innerWidth; FH = innerHeight; fx.width = FW * dpr; fx.height = FH * dpr; layout(); }
+function fit() { dpr = Math.min(devicePixelRatio || 1, 2); FW = innerWidth; FH = innerHeight; fx.width = fw.width = FW * dpr; fx.height = fw.height = FH * dpr; layout(); }
 function drawFx(t) {
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, FW, FH);
   for (const b of bokeh) { b.y -= b.v * 16; if (b.y < -0.2) { b.y = 1.2; b.x = Math.random(); }
@@ -74,11 +74,28 @@ function drawFx(t) {
   for (const s of stars) { const a = 0.35 + 0.65 * Math.max(0, Math.sin(t / 900 + s.p)); star(s.x * FW, s.y * FH, s.s * 2.2, `rgba(255,255,255,${a})`); }
   sparks = sparks.filter(p => (p.life -= 1) > 0);
   for (const p of sparks) { p.x += p.vx; p.y += p.vy; p.vy += 0.05; star(p.x, p.y, p.s * (p.life / 50), p.c); }
-  requestAnimationFrame(drawFx);
+  drawFw(); requestAnimationFrame(drawFx);
 }
 function star(x, y, r, c) { g.fillStyle = c; g.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? r * 0.35 : r; g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } g.fill(); }
 function burst(el, col) { const r = el.getBoundingClientRect(); for (let i = 0; i < 26; i++) { const a = Math.random() * 6.28, v = 1 + Math.random() * 3.5;
   sparks.push({ x: r.left + r.width / 2, y: r.top + r.height * 0.3, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, life: 50, s: 4 + Math.random() * 5, c: Math.random() < 0.5 ? col : '#fff' }); } }
+
+// ─── фейерверк, когда блюдо открылось целиком: свой холст поверх окон ───
+const fw = $('fw'), h = fw.getContext('2d'); let rockets = [], flecks = [], fwOn = false;
+function fireworks() { for (let i = 0; i < 7; i++) setTimeout(() => rockets.push({ x: FW * (0.15 + Math.random() * 0.7), y: FH + 10, ty: FH * (0.1 + Math.random() * 0.3), c: COLORS[Math.floor(Math.random() * 10)] }), 200 + i * 330); }
+function drawFw() {
+  if (!rockets.length && !flecks.length) { if (fwOn) { h.setTransform(1, 0, 0, 1, 0, 0); h.clearRect(0, 0, fw.width, fw.height); fwOn = false; } return; }
+  fwOn = true; h.setTransform(dpr, 0, 0, dpr, 0, 0); h.clearRect(0, 0, FW, FH);
+  rockets = rockets.filter(r => { r.y -= 11; h.strokeStyle = 'rgba(255,255,255,.9)'; h.lineWidth = 3; h.beginPath(); h.moveTo(r.x, r.y); h.lineTo(r.x, r.y + 18); h.stroke();
+    if (r.y > r.ty) return true;
+    for (let i = 0; i < 70; i++) { const a = Math.random() * 6.28, v = 1.5 + Math.random() * 4.5;
+      flecks.push({ x: r.x, y: r.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 60 + Math.random() * 30, c: Math.random() < 0.2 ? '#fff' : r.c[Math.random() < 0.5 ? 0 : 1] }); }
+    bell(NOTES[5 + Math.floor(Math.random() * 5)], 0, 1.6, 0.06); return false; });
+  flecks = flecks.filter(p => (p.life -= 1) > 0);
+  for (const p of flecks) { p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy = p.vy * 0.96 + 0.07;
+    h.globalAlpha = Math.min(1, p.life / 40); h.fillStyle = p.c; h.beginPath(); h.arc(p.x, p.y, 3, 0, 7); h.fill(); }
+  h.globalAlpha = 1;
+}
 
 // ─── поле: пробирки, раскладка под экран ───
 const board = $('board');
@@ -104,7 +121,7 @@ function render() {
   if (sel >= 0) lift(true);
   $('lvl').textContent = L <= LEVELS ? `Уровень ${L} из ${LEVELS}${L > CH1 ? ' · смешение' : ''}` : `Уровень ${L} · свободная игра`;
 }
-function ballEl(c, k) { const b = document.createElement('div'); b.className = 'ball'; b.style.setProperty('--c', COLORS[c][0]); b.style.setProperty('--d', COLORS[c][1]); b.style.bottom = ballBottom(k) + 'px'; return b; }
+function ballEl(c, k) { const b = document.createElement('div'); b.className = 'ball'; b.style.setProperty('--c', COLORS[c][0]); b.style.setProperty('--d', COLORS[c][1]); b.style.bottom = ballBottom(k) + 'px'; b.style.setProperty('--ph', -Math.random() * 5 + 's'); return b; }
 const tubeEl = i => board.children[i];
 function lift(on) { const tb = tubeEl(sel); if (!tb) return; const b = tb.lastElementChild; if (!b) return;
   b.classList.add('lift'); b.style.transform = on ? `translateY(${-(tw * 3.9 - ballBottom(T[sel].length - 1) - tw * 0.78 + tw * 0.55)}px)` : ''; }
@@ -172,10 +189,11 @@ function win() {
   const { p, part } = paintingOf(done), extra = done > LEVELS;
   $('winT').textContent = extra ? 'Уровень пройден! ✨' : part === 3 ? (done === LEVELS ? 'Альбом собран! 💛' : done === CH1 ? 'Глава 1 пройдена! 💛' : 'Блюдо готово! ✨') : 'Отлично! ✨';
   const pp = extra ? Math.floor(Math.random() * PAINT.length) : p;
+  $('win').hidden = false;                                                         // сначала показать: у скрытого окна нулевой размер, мозаика не нарисуется
   setPic($('winPic'), pp, extra ? 3 : part, extra ? 3 : part - 1);
+  if (part === 3 && !extra) fireworks();
   $('winInfo').innerHTML = extra || part === 3 ? infoHTML(pp) + (done === LEVELS ? `<p>Все ${PAINT.length} блюд собраны. Дальше — свободная игра для удовольствия.</p>` : done === CH1 ? '<p>Дальше — глава 2: <b>смешение цветов</b>. Красный + синий = фиолетовый!</p>' : '')
     : `Открыта часть блюда: ${part} из 3.<br><small>Ещё ${3 - part} ${3 - part === 1 ? 'уровень' : 'уровня'} — и оно откроется целиком.</small>`;
-  $('win').hidden = false;
 }
 $('next').onclick = () => { $('win').hidden = true; start(); };
 $('winGal').onclick = () => { $('win').hidden = true; start(); gallery(); };
