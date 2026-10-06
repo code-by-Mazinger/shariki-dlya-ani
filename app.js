@@ -264,9 +264,10 @@ const board = $('board');
 let tw = 58;
 function layout() {
   const n = T.length; if (!n) return;
+  board.style.maxWidth = '';                                                       // мерить без ширины прошлого уровня — иначе пробирки сжимались раз за разом
   const W = board.clientWidth, H = board.clientHeight; let best = 0, bestRows = 1;
   for (let rows = 1; rows <= 3; rows++) { const per = Math.ceil(n / rows);
-    const byW = (W - (per - 1) * 12) / per, byH = (H - (rows - 1) * 24 - 30) / (rows * 3.9 + 0.3);
+    const byW = (W - (per - 1) * 14 - 2) / per, byH = (H - (rows - 1) * 24 - 30) / (rows * 3.9 + 0.3);   // 14 — зазор #board в CSS (было 12: пятая пробирка переносилась в лишний ряд)
     const s = Math.min(byW, byH, 66); if (s > best) { best = s; bestRows = rows; } }
   tw = Math.max(30, Math.floor(best)); document.documentElement.style.setProperty('--tw', tw + 'px');
   board.style.maxWidth = (Math.ceil(n / bestRows) * (tw + 14)) + 'px'; board.style.margin = '0 auto'; board.style.width = '100%';
