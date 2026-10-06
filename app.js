@@ -228,7 +228,7 @@ function mouseGo() {
   if (busy || document.hidden || document.querySelector('.ovl:not([hidden])') || !$('map').hidden || !$('start').hidden || kitty.classList.contains('taste')) { mouseLater(5000); return; }   // сейчас не до мышки — позже
   const f = $('floor').getBoundingClientRect(), k = kitty.getBoundingClientRect(), p = pot.getBoundingClientRect(), y = f.bottom - 26;
   const stop = p.right + 4, catX = k.left + k.width / 2 - 20, D = 3600;
-  mouseEl.hidden = false; squeak(); catMood(''); kitty.classList.add('hunt'); kitten.classList.add('hunt');
+  mouseEl.hidden = false; squeak(); award('mouse'); catMood(''); kitty.classList.add('hunt'); kitten.classList.add('hunt');
   mouseRun = mouseEl.animate([{ transform: `translate(${innerWidth + 10}px,${y}px)` }, { offset: 0.38, transform: `translate(${stop}px,${y}px)` },
     { offset: 0.56, transform: `translate(${stop}px,${y}px)` }, { offset: 0.82, transform: `translate(${catX}px,${y}px)` }, { transform: `translate(-60px,${y}px)` }], { duration: D, fill: 'forwards' });
   const pounce = setTimeout(() => { kitty.classList.remove('hunt');                 // прыжок чуть раньше, чем мышка поравняется с котиком
@@ -250,15 +250,37 @@ function hearts() { const r = kitty.getBoundingClientRect();
   for (let k = 0; k < 3; k++) { const h = document.createElement('span'); h.className = 'heart'; h.textContent = '💗';
     Object.assign(h.style, { left: r.left + r.width * (0.15 + k * 0.25) + 'px', top: r.top + 'px', animationDelay: k * 0.15 + 's' });
     document.body.appendChild(h); setTimeout(() => h.remove(), 1800); } }
-kitty.addEventListener('pointerdown', e => { e.preventDefault(); audio(); purr(); catMood('happy', 1600); hearts();
+kitty.addEventListener('pointerdown', e => { e.preventDefault(); audio(); purr(); catMood('happy', 1600); hearts(); if (++pets === 10) award('pet');
   if (!hintUsed && !won(T)) say('Подсказать? 🐾', 4000); });
 bubble.addEventListener('pointerdown', e => { e.preventDefault(); if (bubble.textContent.startsWith('Подсказать')) hint(); else bubble.hidden = true; });
+// ─── наклейки в книге: за события, без давления — просто собирать. [id, значок, название, как получить] ───
+const STICKERS = [['win', '🍳', 'Первый шаг', 'Пройди любой уровень'], ['dish', '🍰', 'Первое блюдо', 'Открой блюдо целиком'],
+  ['recipe', '📖', 'Читаю рецепт', 'Открой рецепт в книге'], ['photo', '📸', 'Повар', 'Добавь в книгу фото своего блюда'],
+  ['house', '🏠', 'Новосёлы', 'Построй домик на карте'], ['mix', '🎨', 'Художница', 'Смешай два цвета'],
+  ['hint', '💡', 'Совет котика', 'Попроси котика подсказать'], ['pet', '🐾', 'Мур-мур', 'Погладь котика 10 раз'],
+  ['mouse', '🐭', 'Мышка!', 'Дождись, когда прибежит мышка'], ['clean', '✨', 'Без ошибок', 'Пройди уровень (с 5-го) без отмены хода'],
+  ['marathon', '🔥', 'Марафон', 'Пройди 10 уровней за один раз'], ['night', '🌙', 'Полуночница', 'Поиграй после полуночи'],
+  ['holiday', '🎉', 'Праздник', 'Поиграй в праздник'], ['berry', '🍓', 'Ягодная деревня', 'Пройди Ягодную деревню'],
+  ['cheese', '🧀', 'Под корочкой', 'Открой шарик под сырной корочкой']];
+const gotSt = () => { try { return JSON.parse(ls('sh_st') || '[]'); } catch (e) { return []; } };
+let stQ = Promise.resolve(), pets = 0, undone = false, sessWins = 0;
+function award(id) { const g = gotSt(); if (g.includes(id)) return; g.push(id); ls('sh_st', JSON.stringify(g)); $('gal').classList.add('new');
+  const s = STICKERS.find(x => x[0] === id);                                      // несколько сразу — по очереди
+  stQ = stQ.then(() => new Promise(r => setTimeout(() => { toast(`Наклейка! ${s[1]} ${s[2]}`); bell(1318.51, 0, 0.8, 0.1); bell(1567.98, 0.1, 1.1, 0.1); setTimeout(r, 1500); }, 500))); }
+function stickers() { const g = gotSt();
+  $('stSub').textContent = `${g.length} из ${STICKERS.length}`;
+  $('stickers').innerHTML = STICKERS.map(([id, e, name, how], i) => g.includes(id) ? `<div class="st" style="--r:${(i * 37) % 17 - 8}deg"><b>${e}</b><span>${name}</span></div>`
+    : `<div class="st no" data-how="${how}"><b>?</b><span>???</span></div>`).join(''); }
+{ const g = gotSt(), add = [[1, 'win'], [3, 'dish'], [5, 'house'], [31, 'mix'], [50, 'berry']].filter(([n, id]) => L > n && !g.includes(id)).map(x => x[1]);   // уже заработанное раньше — молча
+  if (add.length) ls('sh_st', JSON.stringify(g.concat(add))); }
+$('stickers').onclick = e => { const s = e.target.closest('.st.no'); if (s) toast(s.dataset.how); };
+
 function hint() {                                                                  // треснувшие пробирки для решателя — снова собранные (их не трогают)
   if (busy) return; bubble.hidden = true;
   if (sel >= 0) { lift(false); tubeEl(sel).classList.remove('sel'); sel = -1; }
   const mv = SH.solvable(T.map((t, i) => broken[i] !== undefined ? Array(CAP).fill(broken[i]) : t.slice()), 60000);
   if (!Array.isArray(mv)) { say('Хм… не вижу хода. Попробуй отменить ↶', 3500); return; }
-  hintUsed = true; catMood('happy', 1200); tick();
+  hintUsed = true; catMood('happy', 1200); tick(); award('hint');
   tubeEl(mv[0]).classList.add('hint'); setTimeout(() => { const t = tubeEl(mv[1]); if (t && board.querySelector('.hint')) t.classList.add('hint2'); }, 500);
 }
 
@@ -334,7 +356,7 @@ function move(a, b) {                                                           
   const c = T[a][T[a].length - 1], under = T[b][T[b].length - 1], x = apply(T, a, b);
   fromTube.classList.remove('sel'); sel = -1;
   if (H[a] && H[a] >= T[a].length) { H[a] = Math.max(0, T[a].length - 1); const top = fromTube.querySelectorAll('.ball')[T[a].length - 1];   // сырная корочка снята
-    if (top) { top.classList.remove('hid', 'pop'); void top.offsetWidth; top.classList.add('pop'); bell(NOTES[T[a][T[a].length - 1]], 0.05, 1.2, 0.14); } }
+    award('cheese'); if (top) { top.classList.remove('hid', 'pop'); void top.offsetWidth; top.classList.add('pop'); bell(NOTES[T[a][T[a].length - 1]], 0.05, 1.2, 0.14); } }
   const toTube = tubeEl(b); ball.classList.remove('lift'); ball.style.transition = 'none'; ball.style.transform = ''; ball.style.bottom = ballBottom(T[b].length - 1) + 'px';
   toTube.appendChild(ball); const r1 = ball.getBoundingClientRect();
   ball.style.transform = `translate(${r0.left - r1.left}px,${r0.top - r1.top}px)`; void ball.offsetWidth;
@@ -342,7 +364,7 @@ function move(a, b) {                                                           
   bell(NOTES[c], 0.12, 1.2, 0.18);
   setTimeout(() => {
     busy = false; ball.style.transition = '';
-    if (x !== undefined) {                                                         // смешение: два шарика сливаются в один нового цвета
+    if (x !== undefined) { award('mix');                                                      // смешение: два шарика сливаются в один нового цвета
       const host = ball.previousElementSibling; ball.remove();
       host.style.setProperty('--c', COLORS[x][0]); host.style.setProperty('--d', COLORS[x][1]);
       host.classList.remove('pop'); void host.offsetWidth; host.classList.add('pop');
@@ -353,12 +375,12 @@ function move(a, b) {                                                           
     if (won(T)) { busy = true; winAt = b; setTimeout(() => winOnce(b), 6000); }   // победа: шарики докатятся, котик попробует блюдо — окно откроет crackTube (тут — страховка)
   }, 340);
 }
-function start() { busy = false; winAt = -1; kitty.classList.remove('yum'); T = makeLevel(L); H = hiddenOf(L, T); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
+function start() { busy = false; undone = false; winAt = -1; kitty.classList.remove('yum'); T = makeLevel(L); H = hiddenOf(L, T); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
   if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; }
   if (isCheese(L) && !ls('sh_cheese')) { ls('sh_cheese', 1); $('cheeseIntro').hidden = false; } }
 $('cheeseGo').onclick = () => { $('cheeseIntro').hidden = true; tick(); };
 $('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
-$('undo').onclick = () => { if (busy || !hist.length) return; [T, broken, H] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };
+$('undo').onclick = () => { if (busy || !hist.length) return; undone = true; [T, broken, H] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };
 $('restart').onclick = () => { if (busy) return; start(); tick(); };
 $('snd').onclick = () => { audio(); const on = !soundOn(); ls('sh_sound', on ? '1' : '0'); if (out) out.gain.value = on ? 0.9 : 0; $('snd').classList.toggle('off', !on); };
 $('snd').classList.toggle('off', !soundOn());
@@ -387,6 +409,8 @@ const infoHTML = p => `<b>${PAINT[p][0]}</b><br><small>Секрет повара
 
 function win() {
   melody(); const done = L; L++; ls('sh_level', L);
+  award('win'); if (++sessWins === 10) award('marathon'); if (!undone && done >= 5) award('clean'); if (new Date().getHours() < 5) award('night'); if (HOL) award('holiday');
+  if (done === 50) award('berry'); if ((done - 1) % 5 === 4 && done <= 100) award('house'); if (done <= LEVELS && done % 3 === 0) award('dish');
   const ci = cityOf(done), k = ci >= 0 ? done - CITIES[ci].from : 0, hs = ci >= 0 ? CITIES[ci].houses[Math.floor(k / 5)] : null, built = ci >= 0 && k % 5 === 4;
   if (done > LEVELS && done <= MAXL) { houseWin(done, ci, k, hs, built); return; }
   $('winPic').hidden = false; $('winHouse').hidden = true;
@@ -430,7 +454,7 @@ function gallery() {
   const n = PAINT.filter((_, p) => partsOf(p) === 3).length;
   $('galSub').textContent = `Открыто блюд: ${n} из ${PAINT.length}`;
   $('grid').innerHTML = PAINT.map((_, p) => `<div class="cell" data-p="${p}"><img alt=""><canvas></canvas>${partsOf(p) === 3 ? `<b>${PAINT[p][0]}</b>` : ''}</div>`).join('');
-  $('gallery').hidden = false;
+  $('gallery').hidden = false; $('gal').classList.remove('new'); stickers();
   [...$('grid').children].forEach(cel => { const p = +cel.dataset.p; setPic(cel, p, partsOf(p), partsOf(p)); });
   photoKeys().then(ks => { ks.forEach(p => { const c = $('grid').children[p]; if (c) c.insertAdjacentHTML('beforeend', '<i class="ck" title="Приготовлено">✓</i>'); });
     if (ks.length) $('galSub').textContent += ` · приготовлено: ${ks.length}`; }).catch(() => {});
@@ -440,7 +464,7 @@ const recipeHTML = p => `<div class="recipe"><h3>📖 Рецепт</h3><b>Пон
 function openView(p) { const parts = partsOf(p);
   if (!parts) { toast('Пока закрыта'); return; }
   $('view').hidden = false; setPic($('viewPic'), p, parts, parts); $('view').querySelector('.card').scrollTop = 0;
-  $('viewT').textContent = parts === 3 ? PAINT[p][0] : 'Блюдо ещё готовится';
+  $('viewT').textContent = parts === 3 ? PAINT[p][0] : 'Блюдо ещё готовится'; if (parts === 3) award('recipe');
   $('viewInfo').innerHTML = parts === 3 ? `<small>Секрет повара: ${PAINT[p][1]}</small><div class="diary" id="diary"></div>` + recipeHTML(p) : `Открыто ${parts} из 3 частей. Рецепт откроется вместе с блюдом.`;
   viewP = p; if (parts === 3) diary(p); }
 $('grid').onclick = e => { const cel = e.target.closest('.cell'); if (cel) openView(+cel.dataset.p); };
@@ -500,7 +524,7 @@ $('viewInfo').onclick = e => { const a = e.target.closest('[data-act]'); if (!a)
   if (a.dataset.act === 'photo') $('photoIn').click();
   else if (confirm('Убрать фото из книги?')) photoDel(viewP).then(() => diary(viewP)).catch(() => toast('Не получилось 😿')); };
 $('photoIn').onchange = () => { const f = $('photoIn').files[0], p = viewP; if (!f) return;
-  shrink(f).then(d => photoSet(p, d)).then(() => { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); diary(p); toast('В книге! 💕'); })
+  shrink(f).then(d => photoSet(p, d)).then(() => { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); diary(p); toast('В книге! 💕'); award('photo'); })
     .catch(() => toast('Не получилось сохранить 😿')).finally(() => { $('photoIn').value = ''; }); };
 
 // ─── игра на экране «Домой». На iPhone Сафари стирает данные сайта, если его 7 дней не открывать; у приложения с иконки — нет.

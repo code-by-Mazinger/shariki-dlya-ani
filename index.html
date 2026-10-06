@@ -104,6 +104,15 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 .recipe h3{margin:0 0 6px;font-size:17px;color:var(--accent);text-align:center}
 .recipe ul,.recipe ol{margin:4px 0 10px;padding-left:22px}.recipe li{margin:3px 0}
 .go.small{font-size:15px;padding:8px 18px;margin-top:6px}
+/* наклейки в книге: полученные — цветные и чуть повёрнуты, как наклеенные; закрытые — «?», нажать — подсказка, как получить */
+.sth{margin:18px 0 2px;font-size:18px;color:var(--accent)}.sth small{font-size:13px;color:var(--ink2);font-weight:600}
+#stickers{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:12px 6px;margin:10px 0 12px}
+.st{display:flex;flex-direction:column;align-items:center;gap:4px}
+.st b{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;background:radial-gradient(circle at 35% 30%,#fff,#ffe1ef 60%,#ffc2dc);
+  border:3px solid #fff;box-shadow:0 3px 10px rgba(155,93,229,.3);transform:rotate(var(--r,0deg))}
+.st span{font-size:10px;font-weight:700;color:var(--ink2);text-align:center;line-height:1.15}
+.st.no b{background:#f1e9f2;color:#c3b3c6;box-shadow:none;border:2px dashed #d9c9dc;font-size:22px;cursor:pointer}
+#gal{position:relative}#gal.new::after{content:'';position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#ff4f8b;border:2px solid #fff}
 /* сырный городок: шарик под сырной корочкой — «?» с дырочками вместо цвета */
 .ball.hid{background:radial-gradient(circle at 30% 28%,#fffbe0 0,#ffe680 32%,#f2b93b 100%)!important}
 .ball.hid::before{content:'?';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:calc(var(--tw,58px) * .36);color:#a8700f}
@@ -308,6 +317,8 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <h2>Кулинарная книга Ани</h2>
   <small id="galSub"></small>
   <div id="grid"></div>
+  <h3 class="sth">Наклейки <small id="stSub"></small></h3>
+  <div id="stickers"></div>
   <button class="go" id="galBack">Играть</button>
 </div></div>
 <div class="ovl" id="nameCard" hidden><div class="card">
