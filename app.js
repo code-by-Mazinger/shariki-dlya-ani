@@ -167,8 +167,9 @@ $('snd').classList.toggle('off', !soundOn());
 const GRID = 6;
 function tileOrder(p) { const r = SH.rng(p * 31 + 7), a = Array.from({ length: GRID * GRID }, (_, i) => i);
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function cover(cv, p, parts, from = parts) {                                      // parts из 3 открыто; from — сколько было (для анимации)
-  const box = cv.parentElement, w = box.clientWidth, h = box.clientHeight; if (!w || !h) return;
+function cover(cv, p, parts, from = parts, tries = 0) {                           // parts из 3 открыто; from — сколько было (для анимации)
+  const box = cv.parentElement, w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) { if (tries < 30) requestAnimationFrame(() => cover(cv, p, parts, from, tries + 1)); return; }   // ещё не на экране — подождать, а не оставить старую мозаику
   cv.width = w * dpr; cv.height = h * dpr; const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   const ord = tileOrder(p), shown = k => Math.floor(GRID * GRID * k / 3), tw_ = w / GRID, th = h / GRID;
   const draw = a => { c.clearRect(0, 0, w, h);
