@@ -122,7 +122,8 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 .mapHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 8px;text-align:center}
 .mapHead b{display:block;font-size:20px;color:var(--accent)}.mapHead small{color:var(--ink2);font-size:13px}.mapHead .ib:disabled{opacity:.3}
 #mapScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}#mapInner{display:flex;justify-content:center}#mapInner svg{display:block;overflow:visible}
-.mapFoot{padding:10px 12px calc(env(safe-area-inset-bottom) + 12px);text-align:center}
+.mapFoot{padding:10px 12px calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:10px;justify-content:center}
+#home{cursor:pointer}
 #map svg .todo{filter:grayscale(1) brightness(1.2);opacity:.45}
 #map .now{animation:nowp 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes nowp{50%{transform:scale(1.12)}}
 #map .mapcat{animation:bob 2.6s ease-in-out infinite}#map .mapcat .balloon{display:none}
@@ -237,7 +238,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
 <canvas id="fx"></canvas><canvas id="fw"></canvas>
 <div id="app">
   <header>
-    <div><h1>Шарики для Ани</h1><div id="lvl"></div></div>
+    <div><h1 id="home" role="button" aria-label="На главный экран">Шарики для Ани</h1><div id="lvl"></div></div>
     <div class="btns">
       <button class="ib" id="undo" aria-label="Отменить ход">↶</button>
       <button class="ib" id="restart" aria-label="Заново">⟳</button>
@@ -304,7 +305,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
 <div id="map" hidden>
   <div class="mapHead"><button class="ib" id="mapPrev" aria-label="Предыдущий город">◀</button><div><b id="mapName"></b><small id="mapSub"></small></div><button class="ib" id="mapNext" aria-label="Следующий город">▶</button></div>
   <div id="mapScroll"><div id="mapInner"></div></div>
-  <div class="mapFoot"><button class="go" id="mapPlay">Играть ▶</button></div>
+  <div class="mapFoot"><button class="go ghost" id="mapHome">🏠 Главный</button><button class="go" id="mapPlay">Играть ▶</button></div>
 </div>
 <div class="ovl" id="win" hidden><div class="card">
   <h2 id="winT"></h2>

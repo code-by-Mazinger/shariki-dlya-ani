@@ -498,6 +498,9 @@ $('lvl').addEventListener('click', () => openMap());
 $('mapPrev').onclick = () => openMap(Math.max(0, mapCity - 1));
 $('mapNext').onclick = () => openMap(Math.min(CITIES.length - 1, mapCity + 1));
 $('mapPlay').onclick = () => { $('map').hidden = true; tick(); };
+// на главный экран: заголовок «Шарики для Ани» или «🏠 Главный» на карте. Уровень не сбрасывается — «Старт» вернёт в него
+const home = () => { $('map').hidden = true; bubble.hidden = true; $('start').hidden = false; tick(); };
+$('home').onclick = home; $('mapHome').onclick = home;
 
 // ─── кулинарный дневник: «Я приготовила! 📸» — своё фото к блюду. Хранится только в этом телефоне (IndexedDB), уменьшено до 900 px ───
 let viewP = -1;
