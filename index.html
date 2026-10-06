@@ -48,7 +48,7 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 #floor{position:relative;flex:none;display:flex;align-items:flex-end;justify-content:center;gap:16px}
 #floor .sp{width:58px;flex:none}
 /* котик: моргает; .happy — глаза-дуги, .sleep — спит и сопит, .jump — вздрогнул; аксессуар — по празднику (body.h-…) */
-#kitty{width:58px;height:68px;flex:none;cursor:pointer;transform-origin:50% 100%;-webkit-touch-callout:none;animation:breathe 3.4s ease-in-out infinite}
+#kitty{position:relative;width:58px;height:68px;flex:none;cursor:pointer;transform-origin:50% 100%;-webkit-touch-callout:none;animation:breathe 3.4s ease-in-out infinite}
 #kitty svg{display:block;width:100%;height:100%;overflow:visible}
 #kitty .eo{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
 #kitty .eh,#kitty .es,#kitty .zz,#kitty .acc,#kitty .tongue{display:none}
@@ -73,6 +73,20 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 #bubble{position:absolute;bottom:72px;left:50%;transform:translateX(-118px);z-index:3;border:2px solid #fff;border-radius:16px 16px 16px 4px;padding:8px 12px;
   font:inherit;font-size:15px;font-weight:700;color:var(--accent);background:rgba(255,255,255,.92);box-shadow:0 6px 18px rgba(155,93,229,.25);white-space:nowrap;cursor:pointer}
 #bubble[hidden]{display:none}
+#catTag{position:absolute;left:50%;bottom:-9px;z-index:1;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--accent);background:rgba(255,255,255,.88);border-radius:8px;padding:1px 6px;white-space:nowrap;cursor:pointer}
+#nameCard input{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:14px;border:2px solid #f3b6d4;outline:none;text-align:center;color:var(--ink);background:#fff}
+#nameCard .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 4px}
+#nameCard .chips button{border:1.5px solid #f3b6d4;background:rgba(255,255,255,.8);border-radius:12px;padding:6px 12px;font:inherit;font-size:15px;color:var(--accent);cursor:pointer}
+/* рецепт в окне блюда */
+.recipe{text-align:left;margin-top:12px;padding:12px 14px;border-radius:16px;background:rgba(255,240,247,.85);border:1.5px solid #ffd3e6;font-size:15px;line-height:1.45}
+.recipe h3{margin:0 0 6px;font-size:17px;color:var(--accent);text-align:center}
+.recipe ul,.recipe ol{margin:4px 0 10px;padding-left:22px}.recipe li{margin:3px 0}
+.go.small{font-size:15px;padding:8px 18px;margin-top:6px}
+/* блюдо вылетает из кастрюли: пар и картинка поверх окна победы; карточка проявляется после */
+#win .card{transition:opacity .35s}#win.rise .card{opacity:0}
+.riser{position:fixed;z-index:7;object-fit:cover;pointer-events:none;box-shadow:0 8px 26px rgba(90,40,90,.3)}
+.puff{position:fixed;z-index:7;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.9);filter:blur(4px);pointer-events:none;opacity:0;animation:puff 1.2s ease-out forwards}
+@keyframes puff{0%{transform:scale(.3);opacity:.9}100%{transform:translateY(-70px) scale(2.4);opacity:0}}
 .heart{position:fixed;z-index:4;pointer-events:none;font-size:16px;opacity:0;animation:heart 1.4s ease-out forwards}
 @keyframes heart{0%{opacity:1;transform:translateY(0) scale(.6)}100%{opacity:0;transform:translateY(-54px) scale(1.15)}}
 /* подсказка котика: откуда (сразу) и куда (через полсекунды) */
@@ -175,7 +189,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <div id="legend" hidden><span><i style="background:#ff5468"></i>+<i style="background:#ffdc3c"></i>=<i style="background:#ff9530"></i></span><span><i style="background:#ffdc3c"></i>+<i style="background:#3f86ff"></i>=<i style="background:#4fd36e"></i></span><span><i style="background:#ff5468"></i>+<i style="background:#3f86ff"></i>=<i style="background:#a45cf0"></i></span></div>
   <div id="board"></div>
   <div id="floor">
-  <div id="kitty" role="button" aria-label="Котик: погладить, подсказка"><svg viewBox="95 0 290 380">
+  <div id="kitty" role="button" aria-label="Котик: погладить, подсказка"><span id="catTag" role="button" aria-label="Имя котика — изменить"></span><svg viewBox="95 0 290 380">
   <defs><radialGradient id="kfur" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fffaf6"/><stop offset=".7" stop-color="#ffe6ef"/><stop offset="1" stop-color="#f7cfe0"/></radialGradient></defs>
   <g fill="url(#kfur)" stroke="#e7b3cd" stroke-width="5" stroke-linejoin="round">
   <path class="tail" d="M290 330 C360 320 370 240 330 220 C315 213 305 228 318 236 C345 252 335 300 285 305 Z"/>
@@ -230,6 +244,13 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <small id="galSub"></small>
   <div id="grid"></div>
   <button class="go" id="galBack">Играть</button>
+</div></div>
+<div class="ovl" id="nameCard" hidden><div class="card">
+  <h2>Познакомься с котиком 🐱</h2>
+  <p>Как зовут котика?</p>
+  <input id="catName" maxlength="16" placeholder="Имя котика" autocomplete="off">
+  <div class="chips"><button>Мурка</button><button>Персик</button><button>Зефирка</button><button>Пончик</button></div>
+  <button class="go" id="nameGo">Готово</button>
 </div></div>
 <div class="ovl" id="view" hidden><div class="card">
   <div class="pic" id="viewPic"><img alt=""><canvas></canvas></div>
