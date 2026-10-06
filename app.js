@@ -186,7 +186,14 @@ function crackTube(b, c) {
 }
 
 // ─── котик на поле: моргает, засыпает без дела, вздрагивает от треска, мурчит, если погладить; раз за уровень — подсказка ───
-const kitty = $('kitty'), bubble = $('bubble'); let nap = 0, moodT = 0, hintUsed = false;
+const kitty = $('kitty'), bubble = $('bubble'), kitten = $('kitten');
+{ // котёнок — рыжая копия котика: без бантика и праздничных вещей, с полосками на лбу
+  const sv = kitty.querySelector('svg').cloneNode(true); sv.setAttribute('class', 'k');
+  sv.querySelector('radialGradient').id = 'kfur2'; sv.querySelectorAll('[fill="url(#kfur)"]').forEach(e => { e.setAttribute('fill', 'url(#kfur2)'); e.setAttribute('stroke', '#e0a274'); });
+  [...sv.querySelectorAll('stop')].forEach((s, i) => s.setAttribute('stop-color', ['#fff6ea', '#ffdcb5', '#f7b47c'][i]));
+  sv.querySelectorAll('.acc, .zz, circle[fill="#ff5c9e"], path[stroke="#d63a7d"]:not(.tongue)').forEach(e => e.remove());
+  sv.querySelector('.eo').insertAdjacentHTML('beforebegin', '<path d="M178 84 Q190 98 186 112 M200 78 V106 M222 84 Q210 98 214 112" fill="none" stroke="#ee9a5a" stroke-width="8" stroke-linecap="round"/>');
+  kitten.prepend(sv); } let nap = 0, moodT = 0, hintUsed = false;
 function catMood(m, ms) { kitty.classList.remove('happy', 'sleep'); if (m) kitty.classList.add(m); clearTimeout(moodT); if (ms) moodT = setTimeout(() => kitty.classList.remove(m), ms); }
 function catJump() { if (kitty.classList.contains('taste')) return; kitty.classList.remove('jump');   // у кастрюли не вздрагивает — иначе «телепорт» на место
   void kitty.offsetWidth; kitty.classList.add('jump'); }
@@ -221,12 +228,14 @@ function mouseGo() {
   if (busy || document.hidden || document.querySelector('.ovl:not([hidden])') || !$('map').hidden || !$('start').hidden || kitty.classList.contains('taste')) { mouseLater(5000); return; }   // сейчас не до мышки — позже
   const f = $('floor').getBoundingClientRect(), k = kitty.getBoundingClientRect(), p = pot.getBoundingClientRect(), y = f.bottom - 26;
   const stop = p.right + 4, catX = k.left + k.width / 2 - 20, D = 3600;
-  mouseEl.hidden = false; squeak(); catMood(''); kitty.classList.add('hunt');
+  mouseEl.hidden = false; squeak(); catMood(''); kitty.classList.add('hunt'); kitten.classList.add('hunt');
   mouseRun = mouseEl.animate([{ transform: `translate(${innerWidth + 10}px,${y}px)` }, { offset: 0.38, transform: `translate(${stop}px,${y}px)` },
     { offset: 0.56, transform: `translate(${stop}px,${y}px)` }, { offset: 0.82, transform: `translate(${catX}px,${y}px)` }, { transform: `translate(-60px,${y}px)` }], { duration: D, fill: 'forwards' });
   const pounce = setTimeout(() => { kitty.classList.remove('hunt');                 // прыжок чуть раньше, чем мышка поравняется с котиком
     kitty.animate([{ transform: 'none' }, { transform: 'translate(-6px,-26px) rotate(-12deg)' }, { transform: 'translate(-12px,0) scale(1.12,.86)' }, { transform: 'none' }], { duration: 650, easing: 'ease-out' }); }, D * 0.82 - 350);
-  mouseRun.onfinish = () => { clearTimeout(pounce); kitty.classList.remove('hunt'); mouseEl.hidden = true; mouseRun = null; say('Эх, убежала! 🐭', 1800); mouseLater(60000 + Math.random() * 60000); };
+  const kp = setTimeout(() => { kitten.classList.remove('hunt');                   // котёнок прыгает первым — когда мышка у него под носом, перед рывком
+    kitten.animate([{ transform: 'none' }, { transform: 'translate(-10px,-20px) rotate(-14deg)' }, { transform: 'translate(-16px,0) scale(1.12,.86)' }, { transform: 'none' }], { duration: 600, easing: 'ease-out' }); }, D * 0.52);
+  mouseRun.onfinish = () => { clearTimeout(pounce); clearTimeout(kp); kitty.classList.remove('hunt'); kitten.classList.remove('hunt'); mouseEl.hidden = true; mouseRun = null; say('Эх, убежала! 🐭', 1800); mouseLater(60000 + Math.random() * 60000); };
 }
 mouseEl.addEventListener('pointerdown', e => { e.preventDefault(); audio(); squeak(); if (mouseRun) mouseRun.playbackRate = 2; });
 

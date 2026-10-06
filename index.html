@@ -46,7 +46,20 @@ h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;
 #pot{position:relative;flex:none;width:120px;height:88px;transform-origin:50% 100%}
 /* пол: котик рядом с кастрюлей; пустышка справа держит кастрюлю по центру */
 #floor{position:relative;flex:none;display:flex;align-items:flex-end;justify-content:center;gap:16px}
-#floor .sp{width:58px;flex:none}
+/* котёнок с клубком справа от кастрюли: рыжая копия котика (собирается в app.js), поменьше; тоже охотится на мышку */
+#kitten{position:relative;width:58px;height:68px;flex:none;transform-origin:50% 100%}
+#kitten svg.k{position:absolute;right:0;bottom:0;width:44px;height:54px;overflow:visible;transform-origin:50% 100%;animation:pat 2.4s ease-in-out infinite}
+#kitten .eh,#kitten .es,#kitten .zz,#kitten .acc,#kitten .tongue{display:none}
+#kitten .eo{transform-box:fill-box;transform-origin:center;animation:blink 3.7s infinite}
+#kitten .tail{transform-box:view-box;transform-origin:290px 320px;animation:wag 1.6s ease-in-out infinite}
+#kitten .yarn{position:absolute;left:0;bottom:0;width:20px;height:18px;overflow:visible;animation:roll 2.4s ease-in-out infinite}
+@keyframes roll{0%,100%{transform:none}45%{transform:translateX(-12px) rotate(-300deg)}}
+@keyframes pat{0%,100%{transform:none}30%{transform:rotate(-9deg) translateX(-3px)}42%{transform:scale(1.05,.93) rotate(-7deg)}}
+#kitten.hunt svg.k,#kitten.hunt .yarn{animation:none}#kitten.hunt{animation:hunt .2s ease-in-out infinite alternate}
+/* ложка в кастрюле помешивает суп, пока он варится */
+#pot .spoon{transform-box:view-box;transform-origin:68px 27px;animation:stir 3s ease-in-out infinite}#pot:not(.hot) .spoon{animation-play-state:paused}
+@keyframes stir{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(9deg)}}
+@media (prefers-reduced-motion:reduce){#kitten svg.k,#kitten .yarn,#kitten .eo,#kitten .tail,#pot .spoon{animation:none}}
 /* котик: моргает; .happy — глаза-дуги, .sleep — спит и сопит, .jump — вздрогнул; аксессуар — по празднику (body.h-…) */
 #kitty{position:relative;width:58px;height:68px;flex:none;cursor:pointer;transform-origin:50% 100%;-webkit-touch-callout:none;animation:breathe 3.4s ease-in-out infinite}
 #kitty svg{display:block;width:100%;height:100%;overflow:visible}
@@ -249,8 +262,8 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <g class="zz" fill="#9b7bd6" font-weight="800" font-family="-apple-system,sans-serif"><text x="296" y="96" font-size="44">z</text><text x="330" y="56" font-size="32">z</text></g>
   </svg></div>
   <button id="bubble" hidden></button>
-  <div id="pot" aria-hidden="true"><svg viewBox="0 0 120 88"><g class="fire"><g class="fl" transform="translate(40 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><g class="fl" transform="translate(53 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><g class="fl" transform="translate(67 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><g class="fl" transform="translate(80 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><rect x="30" y="83" width="60" height="4" rx="2" fill="#c98bb0"/></g><defs><linearGradient id="enamel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc4dc"/><stop offset="1" stop-color="#f08cb9"/></linearGradient></defs><rect x="4" y="30" width="18" height="8" rx="4" fill="#e889b4"/><rect x="98" y="30" width="18" height="8" rx="4" fill="#e889b4"/><path d="M16 26H104V50Q104 66 88 66H32Q16 66 16 50Z" fill="url(#enamel)" stroke="#e06a9e" stroke-width="2"/><g fill="#fff" opacity=".7"><circle cx="34" cy="44" r="3"/><circle cx="52" cy="54" r="2.5"/><circle cx="70" cy="42" r="3"/><circle cx="88" cy="52" r="2.5"/></g><ellipse cx="60" cy="26" rx="45" ry="8" fill="#ffd9e8" stroke="#e06a9e" stroke-width="2"/><ellipse class="soup" cx="60" cy="27" rx="38" ry="5"/></svg><i></i><i></i><i></i></div>
-  <i class="sp"></i>
+  <div id="pot" aria-hidden="true"><svg viewBox="0 0 120 88"><g class="fire"><g class="fl" transform="translate(40 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><g class="fl" transform="translate(53 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><g class="fl" transform="translate(67 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><g class="fl" transform="translate(80 84)"><path d="M0 0 C-8 -4 -7 -14 0 -22 C7 -14 8 -4 0 0 Z" fill="#ff8a3d"/><path d="M0 0 C-4 -2 -4 -8 0 -13 C4 -8 4 -2 0 0 Z" fill="#ffd84d"/></g><rect x="30" y="83" width="60" height="4" rx="2" fill="#c98bb0"/></g><defs><linearGradient id="enamel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc4dc"/><stop offset="1" stop-color="#f08cb9"/></linearGradient></defs><rect x="4" y="30" width="18" height="8" rx="4" fill="#e889b4"/><rect x="98" y="30" width="18" height="8" rx="4" fill="#e889b4"/><path d="M16 26H104V50Q104 66 88 66H32Q16 66 16 50Z" fill="url(#enamel)" stroke="#e06a9e" stroke-width="2"/><g fill="#fff" opacity=".7"><circle cx="34" cy="44" r="3"/><circle cx="52" cy="54" r="2.5"/><circle cx="70" cy="42" r="3"/><circle cx="88" cy="52" r="2.5"/></g><ellipse cx="60" cy="26" rx="45" ry="8" fill="#ffd9e8" stroke="#e06a9e" stroke-width="2"/><ellipse class="soup" cx="60" cy="27" rx="38" ry="5"/><g class="spoon"><path d="M68 27 L94 -4" stroke="#a8673d" stroke-width="7.5" stroke-linecap="round"/><path d="M68 27 L94 -4" stroke="#dba06b" stroke-width="4.5" stroke-linecap="round"/><circle cx="92.5" cy="-2.5" r="1.6" fill="#a8673d"/></g></svg><i></i><i></i><i></i></div>
+  <div id="kitten" aria-hidden="true"><svg class="yarn" viewBox="0 0 46 42"><path d="M32 28 Q44 31 43 41" fill="none" stroke="#ff8fc3" stroke-width="2.5" stroke-linecap="round"/><circle cx="20" cy="21" r="17" fill="#ff8fc3" stroke="#d63a7d" stroke-width="2"/><path d="M6 15 Q20 25 34 13 M5 23 Q20 33 35 21 M10 31 Q22 21 30 35 M14 7 Q12 21 22 37" fill="none" stroke="#fff" stroke-width="2" opacity=".7"/></svg></div>
   </div>
 </div>
 <div id="toast"></div>
