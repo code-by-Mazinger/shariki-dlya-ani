@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f6c6dc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Шарики">
+<title>Шарики для Ани</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+/* Нежный «девчачий» фон: переливается розовый → лавандовый → персиковый, сверху мягкие светящиеся пятна и блёстки (рисует app.js) */
+:root{--ink:#5b3a5e;--ink2:#8a6a8c;--glass:rgba(255,255,255,.38);--edge:rgba(255,255,255,.85);--accent:#e8579a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,"SF Pro Rounded","Segoe UI",Roboto,sans-serif;color:var(--ink);
+  -webkit-user-select:none;user-select:none;touch-action:manipulation}
+body{background:linear-gradient(135deg,#ffd6e8 0%,#f3d1ff 35%,#d9d4ff 60%,#ffe0d0 100%);background-size:300% 300%;animation:sky 24s ease-in-out infinite}
+@keyframes sky{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+#fx{position:fixed;inset:0;pointer-events:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px)}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;letter-spacing:.02em;background:linear-gradient(90deg,#e8579a,#9b5de5);-webkit-background-clip:text;background-clip:text;color:transparent}
+#lvl{font-size:14px;color:var(--ink2);font-weight:600}
+.btns{display:flex;gap:6px;flex:none}
+.ib{width:38px;height:38px;border-radius:13px;border:1.5px solid var(--edge);background:var(--glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  font-size:18px;color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(155,93,229,.18);cursor:pointer}
+.ib:active{transform:scale(.92)}
+.ib.off{opacity:.45}
+#board{flex:1;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:var(--gap,18px) var(--gap,14px);padding:10px 0}
+/* пробирка — матовое стекло; шарики стоят снизу вверх */
+.tube{position:relative;width:var(--tw,58px);height:calc(var(--tw,58px) * 3.9);border-radius:12px 12px calc(var(--tw,58px) / 2) calc(var(--tw,58px) / 2);
+  background:linear-gradient(90deg,rgba(255,255,255,.55),rgba(255,255,255,.2) 40%,rgba(255,255,255,.45));border:2px solid var(--edge);
+  box-shadow:inset 0 0 12px rgba(255,255,255,.6),0 6px 18px rgba(155,93,229,.18);transition:transform .18s,box-shadow .18s;cursor:pointer}
+.tube.sel{transform:translateY(-10px);box-shadow:inset 0 0 12px rgba(255,255,255,.8),0 0 0 3px rgba(232,87,154,.5),0 10px 24px rgba(232,87,154,.35)}
+.tube.done{box-shadow:inset 0 0 16px rgba(255,255,255,.9),0 0 22px var(--glow,#fff)}
+.tube.bad{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.ball{position:absolute;left:50%;width:calc(var(--tw,58px) * .78);height:calc(var(--tw,58px) * .78);margin-left:calc(var(--tw,58px) * -.39);border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0,rgba(255,255,255,.35) 18%,var(--c) 42%,var(--d) 100%);
+  box-shadow:0 3px 8px rgba(90,40,90,.25),inset 0 -4px 8px rgba(0,0,0,.12);will-change:transform}
+.ball.lift{transition:transform .16s ease-out}
+/* окна: победа с картиной, галерея, просмотр картины */
+.ovl{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(255,230,245,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:5}
+.ovl[hidden]{display:none}
+.card{width:min(440px,94vw);max-height:92vh;overflow:auto;border-radius:24px;background:rgba(255,255,255,.82);border:2px solid #fff;box-shadow:0 20px 60px rgba(155,93,229,.3);
+  padding:18px;text-align:center}
+.card h2{margin:4px 0 10px;font-size:22px;color:var(--accent)}
+.card p{margin:8px 0;line-height:1.45;color:var(--ink)}
+.card small{color:var(--ink2)}
+.pic{position:relative;border-radius:14px;overflow:hidden;margin:6px auto 10px;box-shadow:0 8px 26px rgba(90,40,90,.25)}
+.pic img{display:block;width:100%}
+.pic canvas{position:absolute;inset:0;width:100%;height:100%}
+.go{margin-top:8px;border:0;border-radius:16px;padding:14px 28px;font-size:18px;font-weight:700;color:#fff;cursor:pointer;
+  background:linear-gradient(90deg,#f06aa8,#a46cf0);box-shadow:0 8px 20px rgba(232,87,154,.35)}
+.go.ghost{background:rgba(255,255,255,.7);color:var(--accent);box-shadow:none;border:2px solid #f3b6d4}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
+#grid .cell{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;background:#f6e3f2;border:2px solid #fff;cursor:pointer}
+#grid .cell img{width:100%;height:100%;object-fit:cover;display:block}
+#grid .cell canvas{position:absolute;inset:0;width:100%;height:100%}
+#grid .cell b{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 6px;font-size:11px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);text-align:left;
+  background:linear-gradient(transparent,rgba(40,10,40,.6))}
+#toast{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);font-size:26px;font-weight:800;color:var(--accent);text-shadow:0 2px 12px #fff;
+  pointer-events:none;opacity:0;transition:opacity .3s;z-index:4;white-space:nowrap}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div id="app">
+  <header>
+    <div><h1>Шарики для Ани</h1><div id="lvl"></div></div>
+    <div class="btns">
+      <button class="ib" id="undo" aria-label="Отменить ход">↶</button>
+      <button class="ib" id="restart" aria-label="Заново">⟳</button>
+      <button class="ib" id="gal" aria-label="Галерея">🖼</button>
+      <button class="ib" id="snd" aria-label="Звук">♪</button>
+    </div>
+  </header>
+  <div id="board"></div>
+</div>
+<div id="toast"></div>
+<div class="ovl" id="win" hidden><div class="card">
+  <h2 id="winT"></h2>
+  <div class="pic" id="winPic"><img alt=""><canvas></canvas></div>
+  <p id="winInfo"></p>
+  <div class="row"><button class="go ghost" id="winGal">Галерея</button><button class="go" id="next">Дальше</button></div>
+</div></div>
+<div class="ovl" id="gallery" hidden><div class="card">
+  <h2>Галерея Ани</h2>
+  <small id="galSub"></small>
+  <div id="grid"></div>
+  <button class="go" id="galBack">Играть</button>
+</div></div>
+<div class="ovl" id="view" hidden><div class="card">
+  <div class="pic" id="viewPic"><img alt=""><canvas></canvas></div>
+  <h2 id="viewT"></h2>
+  <p id="viewInfo"></p>
+  <button class="go ghost" id="viewBack">Назад</button>
+</div></div>
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
