@@ -25,7 +25,7 @@ body{background:linear-gradient(135deg,#ffd6e8 0%,#f3d1ff 35%,#d9d4ff 60%,#ffe0d
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px)}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 h1{margin:0;font-size:clamp(16px,4.6vw,24px);white-space:nowrap;font-weight:800;letter-spacing:.02em;background:linear-gradient(90deg,#e8579a,#9b5de5);-webkit-background-clip:text;background-clip:text;color:transparent}
-#lvl{font-size:14px;color:var(--ink2);font-weight:600}
+#lvl{font-size:14px;color:var(--ink2);font-weight:600;cursor:pointer;white-space:nowrap}
 .btns{display:flex;gap:6px;flex:none}
 .ib{width:38px;height:38px;border-radius:13px;border:1.5px solid var(--edge);background:var(--glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   font-size:18px;color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(155,93,229,.18);cursor:pointer}
@@ -91,6 +91,23 @@ body.h-ny #kitty .ny,body.h-bd #kitty .bd,body.h-val #kitty .val,body.h-w8 #kitt
 .recipe h3{margin:0 0 6px;font-size:17px;color:var(--accent);text-align:center}
 .recipe ul,.recipe ol{margin:4px 0 10px;padding-left:22px}.recipe li{margin:3px 0}
 .go.small{font-size:15px;padding:8px 18px;margin-top:6px}
+/* сырный городок: шарик под сырной корочкой — «?» с дырочками вместо цвета */
+.ball.hid{background:radial-gradient(circle at 30% 28%,#fffbe0 0,#ffe680 32%,#f2b93b 100%)!important}
+.ball.hid::before{content:'?';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:calc(var(--tw,58px) * .36);color:#a8700f}
+.ball.hid::after{background:radial-gradient(circle at 26% 66%,#e0a52a 0 9%,#0000 10%),radial-gradient(circle at 74% 38%,#e0a52a 0 7%,#0000 8%),radial-gradient(circle at 62% 80%,#e0a52a 0 6%,#0000 7%)!important;-webkit-mask:none!important;mask:none!important;animation:none!important}
+/* карта путешествия */
+#map{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column}#map[hidden]{display:none}
+.mapHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 8px;text-align:center}
+.mapHead b{display:block;font-size:20px;color:var(--accent)}.mapHead small{color:var(--ink2);font-size:13px}.mapHead .ib:disabled{opacity:.3}
+#mapScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}#mapInner{display:flex;justify-content:center}#mapInner svg{display:block;overflow:visible}
+.mapFoot{padding:10px 12px calc(env(safe-area-inset-bottom) + 12px);text-align:center}
+#map svg .todo{filter:grayscale(1) brightness(1.2);opacity:.45}
+#map .now{animation:nowp 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes nowp{50%{transform:scale(1.12)}}
+#map .mapcat{animation:bob 2.6s ease-in-out infinite}#map .mapcat .balloon{display:none}
+#map .mapcat.arrive{animation:arrive 2.2s cubic-bezier(.3,.8,.4,1)}#map .mapcat.arrive .balloon{display:inline}
+@keyframes arrive{0%{transform:translate(-120px,-420px)}70%{transform:translate(0,-12px)}100%{transform:none}}
+/* домик в окне победы (уровни 46–100) */
+.house{width:170px;height:170px;margin:4px auto 6px}.house svg{width:100%;height:100%}.house.todo svg{filter:grayscale(1) brightness(1.2);opacity:.5}
 /* дневник и значок «приготовлено» */
 .diary{margin-top:10px}.diary h3{margin:0 0 6px;font-size:17px;color:var(--accent)}
 .diary img.mine{display:block;width:100%;border-radius:14px;box-shadow:0 6px 18px rgba(90,40,90,.2);margin-bottom:4px}
@@ -190,7 +207,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
 #grid .cell b{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 6px;font-size:11px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);text-align:left;
   background:linear-gradient(transparent,rgba(40,10,40,.6))}
 #toast{z-index:11!important;position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);font-size:26px;font-weight:800;color:var(--accent);text-shadow:0 2px 12px #fff;
-  pointer-events:none;opacity:0;transition:opacity .3s;z-index:4;white-space:nowrap}
+  pointer-events:none;opacity:0;transition:opacity .3s;z-index:4;white-space:normal;width:max-content;max-width:88vw;text-align:center;line-height:1.2}
 #toast.on{opacity:1}
 </style>
 </head>
@@ -256,9 +273,21 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <p><small>Цель та же — в каждой пробирке один цвет. Не смешай лишнего: ошибку можно отменить кнопкой ↶.</small></p>
   <button class="go" id="mixGo">Понятно</button>
 </div></div>
+<div class="ovl" id="cheeseIntro" hidden><div class="card">
+  <h2>Сырный городок 🧀</h2>
+  <p>Здесь некоторые шарики спрятаны под <b>сырной корочкой</b> «?». Сними шарик сверху — и увидишь, какой под ним.</p>
+  <p><small>Не угадала — ход можно отменить кнопкой ↶.</small></p>
+  <button class="go" id="cheeseGo">Понятно</button>
+</div></div>
+<div id="map" hidden>
+  <div class="mapHead"><button class="ib" id="mapPrev" aria-label="Предыдущий город">◀</button><div><b id="mapName"></b><small id="mapSub"></small></div><button class="ib" id="mapNext" aria-label="Следующий город">▶</button></div>
+  <div id="mapScroll"><div id="mapInner"></div></div>
+  <div class="mapFoot"><button class="go" id="mapPlay">Играть ▶</button></div>
+</div>
 <div class="ovl" id="win" hidden><div class="card">
   <h2 id="winT"></h2>
   <div class="pic" id="winPic"><img alt=""><canvas></canvas></div>
+  <div class="house" id="winHouse" hidden></div>
   <p id="winInfo"></p>
   <div class="row"><button class="go ghost" id="winGal">Альбом</button><button class="go" id="next">Дальше</button></div>
 </div></div>
@@ -295,6 +324,7 @@ body.sweet .ball::after{background:radial-gradient(circle var(--sp) at 26% 30%,#
   <button class="go ghost" id="viewBack">Назад</button>
 </div></div>
 <script src="logic.js"></script>
+<script src="houses.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

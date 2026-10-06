@@ -1,7 +1,7 @@
 'use strict';
 // Отрисовка, касания, звук, альбом. Логика уровней — logic.js (SH).
 (() => {
-const { CAP, CH1, LEVELS, canMove, apply, doneTube, won, makeLevel, paintingOf, isMix } = SH;
+const { CAP, CH1, LEVELS, MAXL, canMove, apply, doneTube, won, makeLevel, paintingOf, isMix, isCheese, hiddenOf } = SH;
 const $ = id => document.getElementById(id);
 const ls = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) { return null; } };
 
@@ -66,6 +66,7 @@ const RECIPES = [
    ['Взбейте яйца с сахаром 8–10 мин, пока масса не станет светлой и не увеличится втрое.', 'Аккуратно вмешайте просеянную муку лопаткой снизу вверх.', 'Выпекайте в форме 20 см при 170 °C 30–35 мин, первые 20 мин не открывайте духовку.', 'Остудите и разрежьте на 2–3 коржа. Сварите сироп из воды и сахара.', 'Взбейте холодные сливки с маскарпоне и пудрой. Соберите: корж, сироп, крем, клубника.', 'Обмажьте торт кремом и украсьте клубникой прямо перед подачей.']]];
 
 let L = Math.max(1, +ls('sh_level') || 1), T = [], hist = [], sel = -1, busy = false, order = [], broken = [];
+let H = [];                                                                        // сырный городок: сколько нижних шариков пробирки спрятано
 let winAt = -1;                                                                    // пробирка, которой выигран уровень: окно победы — один раз, когда докатятся ЕЁ шарики
 function winOnce(b) { if (winAt !== b) return; winAt = -1; win(); }   // broken[i] — цвет треснувшей пробирки
 const soundOn = () => ls('sh_sound') !== '0';
@@ -166,8 +167,9 @@ function potUpdate() { const cs = broken.filter(c => c !== undefined);
   const rgb = cs.map(c => COLORS[c][0].match(/\w\w/g).map(h => parseInt(h, 16))), avg = [0, 1, 2].map(k => Math.round(rgb.reduce((s, v) => s + v[k], 0) / rgb.length));
   pot.style.setProperty('--soup', `rgb(${avg})`); pot.classList.add('hot'); }
 function crackTube(b, c) {
-  broken[b] = c; T[b] = [];                                                        // логика сразу: пробирка пуста и закрыта для ходов
+  broken[b] = c; T[b] = []; H[b] = 0;                                              // логика сразу: пробирка пуста и закрыта для ходов
   const tb = tubeEl(b), balls = [...tb.querySelectorAll('.ball')].reverse(), pr = pot.getBoundingClientRect();
+  balls.forEach(x => x.classList.remove('hid'));
   setTimeout(() => {
     crackSnd(); catJump(); tb.classList.remove('done'); tb.classList.add('cracked');
     balls.forEach((ball, k) => { const r = ball.getBoundingClientRect(), fly = ball.cloneNode(true); ball.remove();
@@ -216,7 +218,7 @@ function squeak() { if (!ac) return; const t0 = ac.currentTime;
 function mouseLater(ms) { clearTimeout(mouseT); mouseT = setTimeout(mouseGo, ms); }
 function mouseGo() {
   if (mouseRun) return;                                                           // «уменьшение движения» не проверяем: мышка — редкий короткий эпизод, как фейерверк
-  if (busy || document.hidden || document.querySelector('.ovl:not([hidden])') || !$('start').hidden || kitty.classList.contains('taste')) { mouseLater(5000); return; }   // сейчас не до мышки — позже
+  if (busy || document.hidden || document.querySelector('.ovl:not([hidden])') || !$('map').hidden || !$('start').hidden || kitty.classList.contains('taste')) { mouseLater(5000); return; }   // сейчас не до мышки — позже
   const f = $('floor').getBoundingClientRect(), k = kitty.getBoundingClientRect(), p = pot.getBoundingClientRect(), y = f.bottom - 26;
   const stop = p.right + 4, catX = k.left + k.width / 2 - 20, D = 3600;
   mouseEl.hidden = false; squeak(); catMood(''); kitty.classList.add('hunt');
@@ -299,13 +301,13 @@ function render() {
   board.innerHTML = '';
   T.forEach((t, i) => { const d = document.createElement('div'); d.className = 'tube' + (doneTube(t) && t.length ? ' done' : '') + (broken[i] !== undefined ? ' cracked' : '') + (i === sel ? ' sel' : '');
     if (doneTube(t) && t.length) d.style.setProperty('--glow', COLORS[t[0]][0]); if (broken[i] !== undefined) d.style.setProperty('--glow', COLORS[broken[i]][0]);
-    t.forEach((c, k) => d.appendChild(ballEl(c, k)));
+    t.forEach((c, k) => d.appendChild(ballEl(c, k, k < H[i])));
     d.addEventListener('pointerdown', e => { e.preventDefault(); tap(i); });
     board.appendChild(d); });
   if (sel >= 0) lift(true);
-  $('lvl').textContent = L <= LEVELS ? `Уровень ${L} из ${LEVELS}${L > CH1 ? ' · смешение' : ''}` : `Уровень ${L} · свободная игра`;
+  const ci = cityOf(L); $('lvl').textContent = ci >= 0 ? `🗺 ${CITIES[ci].name} · ${L - CITIES[ci].from + 1} из 50` : `🗺 Уровень ${L} · свободная игра`;
 }
-function ballEl(c, k) { const b = document.createElement('div'); b.className = 'ball'; b.style.setProperty('--c', COLORS[c][0]); b.style.setProperty('--d', COLORS[c][1]); b.style.bottom = ballBottom(k) + 'px'; b.style.setProperty('--ph', -Math.random() * 5 + 's'); return b; }
+function ballEl(c, k, hid) { const b = document.createElement('div'); b.className = hid ? 'ball hid' : 'ball'; b.style.setProperty('--c', COLORS[c][0]); b.style.setProperty('--d', COLORS[c][1]); b.style.bottom = ballBottom(k) + 'px'; b.style.setProperty('--ph', -Math.random() * 5 + 's'); return b; }
 const tubeEl = i => board.children[i];
 function lift(on) { const tb = tubeEl(sel); if (!tb) return; const b = tb.lastElementChild; if (!b) return;
   b.classList.add('lift'); b.style.transform = on ? `translateY(${-(tw * 3.9 - ballBottom(T[sel].length - 1) - tw * 0.78 + tw * 0.55)}px)` : ''; }
@@ -318,10 +320,12 @@ function tap(i) {
   move(sel, i);
 }
 function move(a, b) {                                                              // перелёт шарика: FLIP — запомнить, где был, переложить, анимировать
-  busy = true; hist.push([T.map(t => t.slice()), broken.slice()]);
+  busy = true; hist.push([T.map(t => t.slice()), broken.slice(), H.slice()]);
   const fromTube = tubeEl(a), ball = fromTube.lastElementChild, r0 = ball.getBoundingClientRect();
   const c = T[a][T[a].length - 1], under = T[b][T[b].length - 1], x = apply(T, a, b);
   fromTube.classList.remove('sel'); sel = -1;
+  if (H[a] && H[a] >= T[a].length) { H[a] = Math.max(0, T[a].length - 1); const top = fromTube.querySelectorAll('.ball')[T[a].length - 1];   // сырная корочка снята
+    if (top) { top.classList.remove('hid', 'pop'); void top.offsetWidth; top.classList.add('pop'); bell(NOTES[T[a][T[a].length - 1]], 0.05, 1.2, 0.14); } }
   const toTube = tubeEl(b); ball.classList.remove('lift'); ball.style.transition = 'none'; ball.style.transform = ''; ball.style.bottom = ballBottom(T[b].length - 1) + 'px';
   toTube.appendChild(ball); const r1 = ball.getBoundingClientRect();
   ball.style.transform = `translate(${r0.left - r1.left}px,${r0.top - r1.top}px)`; void ball.offsetWidth;
@@ -340,10 +344,12 @@ function move(a, b) {                                                           
     if (won(T)) { busy = true; winAt = b; setTimeout(() => winOnce(b), 6000); }   // победа: шарики докатятся, котик попробует блюдо — окно откроет crackTube (тут — страховка)
   }, 340);
 }
-function start() { busy = false; winAt = -1; kitty.classList.remove('yum'); T = makeLevel(L); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
-  if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; } }
+function start() { busy = false; winAt = -1; kitty.classList.remove('yum'); T = makeLevel(L); H = hiddenOf(L, T); hist = []; sel = -1; order = []; broken = []; potUpdate(); hintUsed = false; bubble.hidden = true; wake(); $('legend').hidden = !isMix(L); layout();
+  if (isMix(L) && !ls('sh_mixintro')) { ls('sh_mixintro', 1); $('mixIntro').hidden = false; }
+  if (isCheese(L) && !ls('sh_cheese')) { ls('sh_cheese', 1); $('cheeseIntro').hidden = false; } }
+$('cheeseGo').onclick = () => { $('cheeseIntro').hidden = true; tick(); };
 $('mixGo').onclick = () => { $('mixIntro').hidden = true; tick(); };
-$('undo').onclick = () => { if (busy || !hist.length) return; [T, broken] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };
+$('undo').onclick = () => { if (busy || !hist.length) return; [T, broken, H] = hist.pop(); sel = -1; render(); potUpdate(); tick(); };
 $('restart').onclick = () => { if (busy) return; start(); tick(); };
 $('snd').onclick = () => { audio(); const on = !soundOn(); ls('sh_sound', on ? '1' : '0'); if (out) out.gain.value = on ? 0.9 : 0; $('snd').classList.toggle('off', !on); };
 $('snd').classList.toggle('off', !soundOn());
@@ -372,17 +378,29 @@ const infoHTML = p => `<b>${PAINT[p][0]}</b><br><small>Секрет повара
 
 function win() {
   melody(); const done = L; L++; ls('sh_level', L);
-  const { p, part } = paintingOf(done), extra = done > LEVELS;
+  const ci = cityOf(done), k = ci >= 0 ? done - CITIES[ci].from : 0, hs = ci >= 0 ? CITIES[ci].houses[Math.floor(k / 5)] : null, built = ci >= 0 && k % 5 === 4;
+  if (done > LEVELS && done <= MAXL) { houseWin(done, ci, k, hs, built); return; }
+  $('winPic').hidden = false; $('winHouse').hidden = true;
+  const { p, part } = paintingOf(done), extra = done > MAXL;
   $('winT').textContent = extra ? 'Уровень пройден! ✨' : part === 3 ? (done === LEVELS ? 'Альбом собран! 💛' : done === CH1 ? 'Глава 1 пройдена! 💛' : 'Блюдо готово! ✨') : 'Отлично! ✨';
   const pp = extra ? Math.floor(Math.random() * PAINT.length) : p;
   catMood('happy', 4000);
   $('win').hidden = false;                                                         // сначала показать: у скрытого окна нулевой размер, мозаика не нарисуется
-  const rise = part === 3 && !extra;                                               // блюдо готово целиком — вылетает из кастрюли (мозаику не доигрываем)
+  const rise = part === 3 && !extra && done <= LEVELS;                                               // блюдо готово целиком — вылетает из кастрюли (мозаику не доигрываем)
   setPic($('winPic'), pp, extra ? 3 : part, extra || rise ? 3 : part - 1);
   if (rise) { riseFromPot(pp); fireworks(); }
-  $('winInfo').innerHTML = extra || part === 3 ? infoHTML(pp) + (done === LEVELS ? `<p>Все ${PAINT.length} блюд собраны. Дальше — свободная игра для удовольствия.</p>` : done === CH1 ? '<p>Дальше — глава 2: <b>смешение цветов</b>. Красный + синий = фиолетовый!</p>' : '')
+  $('winInfo').innerHTML = extra || part === 3 ? infoHTML(pp) + (done === LEVELS ? `<p>Все ${PAINT.length} блюд собраны! Дальше — последние домики Ягодной деревни.</p>` : done === CH1 ? '<p>Дальше — глава 2: <b>смешение цветов</b>. Красный + синий = фиолетовый!</p>' : '')
     : `Открыта часть блюда: ${part} из 3.<br><small>Ещё ${3 - part} ${3 - part === 1 ? 'уровень' : 'уровня'} — и оно откроется целиком.</small>`;
   if (extra || part === 3) $('winInfo').insertAdjacentHTML('beforeend', `<br><button class="go ghost small" data-recipe="${pp}">📖 Рецепт</button>`);
+  if (built) $('winInfo').insertAdjacentHTML('beforeend', `<p>🏠 На карте вырос домик: «${hs[0]}»</p>`);
+}
+function houseWin(done, ci, k, hs, built) {                                      // уровни 46–100: вместо блюда — домик на карте
+  const c = CITIES[ci], left = 4 - k % 5, end = k === 49;
+  $('winPic').hidden = true; const hb = $('winHouse'); hb.hidden = false; hb.innerHTML = houseSVG(hs); hb.classList.toggle('todo', !built);
+  $('winT').textContent = end ? `${c.name} ${c.done}! 🎉` : built ? 'Домик построен! 🏠' : 'Отлично! ✨';
+  $('winInfo').innerHTML = built ? `<b>«${hs[0]}»</b> — теперь на карте` : `До домика «${hs[0]}»: ${left} ${left === 1 ? 'уровень' : 'уровня'}`;
+  if (end) $('winInfo').insertAdjacentHTML('beforeend', CITIES[ci + 1] ? `<p>Котик собирает рюкзак — дальше ${CITIES[ci + 1].name} ${CITIES[ci + 1].icon}</p>` : '<p>Скоро новые города! А пока — свободная игра.</p>');
+  catMood('happy', 4000); $('win').hidden = false; if (built) fireworks();
 }
 function riseFromPot(p) {                                                         // из кастрюли — клубы пара, и блюдо вылетает на своё место в окне победы
   const w = $('win'), r = $('winPic').getBoundingClientRect(), q = pot.getBoundingClientRect(), cx = q.left + q.width / 2, cy = q.top + q.height * 0.3;
@@ -394,7 +412,7 @@ function riseFromPot(p) {                                                       
     { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.width + 'px', borderRadius: '14px', opacity: 1 }],   // картинки квадратные; высота блока ещё 0, пока картинка грузится
     { duration: 900, easing: 'cubic-bezier(.3,.9,.4,1)', fill: 'forwards' }).onfinish = () => { w.classList.remove('rise'); setTimeout(() => im.remove(), 400); };
 }
-$('next').onclick = () => { $('win').hidden = true; start(); };
+$('next').onclick = () => { $('win').hidden = true; const arrive = L <= MAXL && cityOf(L) !== cityOf(L - 1); start(); if (arrive) openMap(cityOf(L), true); };
 $('winGal').onclick = () => { $('win').hidden = true; start(); gallery(); };
 
 // ─── альбом: 15 блюд, открытые части — по пройденным уровням ───
@@ -418,6 +436,35 @@ function openView(p) { const parts = partsOf(p);
   viewP = p; if (parts === 3) diary(p); }
 $('grid').onclick = e => { const cel = e.target.closest('.cell'); if (cel) openView(+cel.dataset.p); };
 $('winInfo').onclick = e => { const b = e.target.closest('[data-recipe]'); if (b) openView(+b.dataset.recipe); };
+
+// ─── карта путешествия: дорожка из 50 уровней города, домики за каждые 5 уровней, котик на текущем уровне ───
+let mapCity = 0;
+function openMap(ci = Math.max(0, cityOf(L) < 0 ? CITIES.length - 1 : cityOf(L)), arrive = false) {
+  mapCity = ci; const c = CITIES[ci], W = Math.min(innerWidth, 480), step = 74, Hh = 50 * step + 170, cur = L - c.from;   // cur: <0 — город закрыт, ≥50 — пройден
+  const pos = k => [Math.round(W / 2 + Math.sin(k * 0.62) * W * 0.26), Hh - 80 - k * step];
+  const pts = Array.from({ length: 50 }, (_, k) => pos(k).join(',')).join(' '), r = SH.rng(ci * 101 + 7);
+  let s = `<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}"><polyline points="${pts}" fill="none" stroke="rgba(255,255,255,.92)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>`
+    + `<polyline points="${pts}" fill="none" stroke="${c.path}" stroke-width="4" stroke-dasharray="1 12" stroke-linecap="round"/>`;
+  for (let i = 0; i < 30; i++) s += `<text x="${Math.round(r() < 0.5 ? 6 + r() * W * 0.12 : W - 30 - r() * W * 0.12)}" y="${Math.round(50 + r() * (Hh - 100))}" font-size="20" opacity=".75">${c.deco[Math.floor(r() * c.deco.length)]}</text>`;
+  c.houses.forEach((h, i) => { const k = i * 5 + 4, [x, y] = pos(k), side = x > W / 2 ? -1 : 1, z = i === 9 ? 104 : 86, hx = Math.max(4, Math.min(W - z - 4, x + side * 62 - z / 2)), ok = cur > k;
+    s += houseSVG(h).replace('<svg ', `<svg x="${hx}" y="${y - z + 14}" width="${z}" height="${z}" class="${ok ? '' : 'todo'}" `)
+      + `<text x="${hx + z / 2}" y="${y + 28}" text-anchor="middle" font-size="11" font-weight="800" fill="${ok ? '#8a3d6b' : '#b9a3b8'}">${ok ? h[0] : '?'}</text>`; });
+  for (let k = 0; k < 50; k++) { const [x, y] = pos(k), done = cur > k, now = cur === k;
+    s += now ? `<circle class="now" cx="${x}" cy="${y}" r="21" fill="#fff" stroke="${c.path}" stroke-width="5"/>` : `<circle cx="${x}" cy="${y}" r="16" fill="${done ? c.path : 'rgba(255,255,255,.85)'}" stroke="${done ? '#fff' : '#e8cfe0'}" stroke-width="3"/>`;
+    s += `<text x="${x}" y="${y + 5}" text-anchor="middle" font-size="${now ? 16 : 13}" font-weight="800" fill="${done ? '#fff' : now ? '#8a3d6b' : '#c3a9bf'}">${k + 1}</text>`; }
+  const ck = Math.max(0, Math.min(49, cur)), [cx, cy] = pos(ck);
+  if (cur >= 0) s += `<g class="mapcat${arrive ? ' arrive' : ''}"><text x="${cx + 26}" y="${cy - 52}" font-size="26" class="balloon">🎈</text><image href="img/cat.svg" x="${cx - 34}" y="${cy - 86}" width="68" height="68"/></g>`;
+  $('mapInner').innerHTML = s + '</svg>';
+  $('map').style.background = c.bg; $('mapName').textContent = `${c.icon} ${c.name}`;
+  $('mapSub').textContent = cur < 0 ? `🔒 Откроется после ${CITIES[ci - 1].gen}` : `Пройдено ${Math.min(50, cur)} из 50 · домиков ${Math.min(10, Math.floor(cur / 5))} из 10`;
+  $('mapPrev').disabled = ci === 0; $('mapNext').disabled = ci === CITIES.length - 1;
+  $('map').hidden = false; const sc = $('mapScroll'); sc.scrollTop = cy - sc.clientHeight * 0.6;
+  if (arrive) { setTimeout(() => toast(`${catName()}: ура, ${c.name}! ${c.icon}`), 1600); bell(NOTES[5], 0.2, 1.4, 0.16); bell(NOTES[7], 0.4, 1.4, 0.16); bell(NOTES[9], 0.6, 1.8, 0.16); }
+}
+$('lvl').addEventListener('click', () => openMap());
+$('mapPrev').onclick = () => openMap(Math.max(0, mapCity - 1));
+$('mapNext').onclick = () => openMap(Math.min(CITIES.length - 1, mapCity + 1));
+$('mapPlay').onclick = () => { $('map').hidden = true; tick(); };
 
 // ─── кулинарный дневник: «Я приготовила! 📸» — своё фото к блюду. Хранится только в этом телефоне (IndexedDB), уменьшено до 900 px ───
 let viewP = -1;
@@ -482,6 +529,6 @@ const skins = document.querySelectorAll('#start .skin button');
 function skin(s) { document.body.classList.toggle('sweet', s === 'sweet'); skins.forEach(b => b.setAttribute('aria-pressed', b.dataset.skin === s)); }
 skins.forEach(b => b.onclick = () => { audio(); ls('sh_skin', b.dataset.skin); skin(b.dataset.skin); tick(); });
 skin(ls('sh_skin') || '');
-$('startBtn').onclick = () => { audio(); askTilt(); mouseLater(/[?&]mouse/.test(location.search) ? 3000 : 40000 + Math.random() * 40000); if (!ls('sh_cat')) setTimeout(askName, 500); if (HOL === 'bd') { birthdaySong(); fireworks(); } $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
+$('startBtn').onclick = () => { audio(); askTilt(); if (!ls('sh_map') && ls('sh_cat')) { ls('sh_map', 1); setTimeout(() => { openMap(); toast('Карта путешествия котика 🗺'); }, 400); } mouseLater(/[?&]mouse/.test(location.search) ? 3000 : 40000 + Math.random() * 40000); if (!ls('sh_cat')) setTimeout(askName, 500); if (HOL === 'bd') { birthdaySong(); fireworks(); } $('start').hidden = true; bell(NOTES[0], 0, 1.2, 0.16); bell(NOTES[2], 0.12, 1.2, 0.14); bell(NOTES[4], 0.24, 1.6, 0.14); };
 start(); fit(); requestAnimationFrame(drawFx);
 })();

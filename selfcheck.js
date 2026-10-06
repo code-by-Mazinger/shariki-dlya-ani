@@ -28,8 +28,8 @@ console.log('✓ смешение: красный+жёлтый=оранжевы�
 
 // уровни
 const t0 = Date.now();
-for (let L = 1; L <= S.LEVELS; L++) {
-  const A = S.makeLevel(L), B = S.makeLevel(L), heavy = L >= 40;
+for (let L = 1; L <= S.MAXL; L++) {
+  const A = S.makeLevel(L), B = S.makeLevel(L), heavy = L >= 40 && L <= 50;
   if (heavy && !FULL) continue;
   assert(S.search(L) === S.SEEDS[L], `уровень ${L}: таблица SEEDS устарела (первая удачная попытка ${S.search(L)}, в таблице ${S.SEEDS[L]})`);
   assert.deepStrictEqual(A, B, `уровень ${L} не детерминирован`);
@@ -38,17 +38,21 @@ for (let L = 1; L <= S.LEVELS; L++) {
   if (L <= S.CH1) { const n = S.colorsOf(L);
     assert(A.length === n + S.EMPTY, `уровень ${L}: пробирок ${A.length}`);
     for (let c = 0; c < n; c++) assert(A.flat().filter(v => v === c).length === S.CAP, `уровень ${L}: цвет ${c} не ×${S.CAP}`); }
+  else if (S.isCheese(L)) { const n = S.cheeseColors(L), H = S.hiddenOf(L, A);
+    assert(A.length === n + S.EMPTY && H.length === A.length, `уровень ${L}: пробирок ${A.length}`);
+    assert(H.every((h, k) => h >= 0 && (h === 0 || h < A[k].length)), `уровень ${L}: спрятан верхний шарик`);
+    assert(H.some(h => h > 0) && JSON.stringify(H) === JSON.stringify(S.hiddenOf(L, A)), `уровень ${L}: нет спрятанных или не детерминировано`); }
   else assert(S.isMix(L) && A.flat().some(v => v >= 10 && v <= 12), `уровень ${L}: нет основных цветов для смешения`);
 }
-console.log(`✓ уровни 1–${FULL ? S.LEVELS : 39}${FULL ? '' : ' (40–45 — с --full)'}: решаемы и детерминированы; глава 2 (${S.CH1 + 1}–${S.LEVELS}) — со смешением (${Date.now() - t0} мс)`);
-assert(S.solvable(S.makeLevel(52)) && S.solvable(S.makeLevel(53)), 'свободная игра нерешаема');
+console.log(`✓ уровни 1–${S.MAXL}${FULL ? '' : ' (кроме 40–50 — они с --full)'}: решаемы и детерминированы; 31–50 — смешение, 51–100 — сырный городок со спрятанными шариками (${Date.now() - t0} мс)`);
+assert(S.solvable(S.makeLevel(S.MAXL + 2)) && S.solvable(S.makeLevel(S.MAXL + 3)), 'свободная игра нерешаема');
 const p = S.paintingOf(1), q = S.paintingOf(30), r = S.paintingOf(45);
 assert(p.p === 0 && p.part === 1 && q.p === 9 && q.part === 3 && r.p === 14 && r.part === 3, 'картины по уровням');
-console.log('✓ свободная игра после 45-го и раздача 15 картин по 3 уровня');
+console.log('✓ свободная игра после 100-го и раздача 15 блюд по 3 уровня (1–45)');
 // в браузере logic.js и app.js грузятся как обычные скрипты: имена вроде top/name/status уже заняты window — скрипт упадёт.
 // В Node их нет, поэтому проверяем отдельно (так «top» однажды уронил игру целиком).
 const WIN = ['top', 'parent', 'self', 'window', 'name', 'status', 'length', 'origin', 'frames', 'location', 'history', 'screen', 'close', 'open', 'print', 'event', 'closed', 'opener'];
-const decl = [...fs.readFileSync(__dirname + '/logic.js', 'utf8').matchAll(/^(?:const|let|function)\s+([A-Za-z_$][\w$]*)/gm)].map(m => m[1]);
-const clash = decl.filter(n => WIN.includes(n)); assert(!clash.length, `logic.js объявляет имена, занятые в браузере: ${clash}`);
-console.log('✓ logic.js не конфликтует с именами браузера (window)');
+const decl = ['logic.js', 'houses.js'].flatMap(f => [...fs.readFileSync(__dirname + '/' + f, 'utf8').matchAll(/^(?:const|let|function)\s+([A-Za-z_$][\w$]*)/gm)].map(m => m[1]));
+const clash = decl.filter(n => WIN.includes(n)); assert(!clash.length, `logic.js/houses.js объявляют имена, занятые в браузере: ${clash}`);
+console.log('✓ logic.js и houses.js не конфликтуют с именами браузера (window)');
 console.log('ВСЁ ОК');
